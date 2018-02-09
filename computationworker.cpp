@@ -1,10 +1,10 @@
 #include "computationworker.h"
 
-ComputationWorker::ComputationWorker(QObject *parent) : QObject(parent), shouldStop(false)
+ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1)
 {
-
+    cam = new V4L2Camera();
 }
-template<typename T> void ComputationWorker::fftshift(T* buffer, int n0, int n1) {
+template<typename T> void ComputationWorker::fftshift(T* buffer) {
     int yhalf = n0 / 2;
     int xhalf = n1 / 2;
 
@@ -41,19 +41,12 @@ template<typename T> void ComputationWorker::normalize(T* buffer, int elements) 
     qDebug() << "Normalized, Min/Max: " << min << max;
 }
 
-void ComputationWorker::rectXChanged(int newRectX) {
-    rectX = newRectX;
-}
-
 void ComputationWorker::doWork() {
     rectX = rectY = rectR = 0;
-    cv::VideoCapture cam;
-    cam.open(0);
-    cam.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
-    cam.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
-    if(!cam.isOpened()) {
-        std::cerr << "[ERROR] Could not open camera device" << std::endl;
-    }
+    cam = new V4L2Camera();
+    cam->open();
+    cam->set_resolution(n1, n0);
+
 
     QImage cameraImg(n1, n0, QImage::Format_Grayscale8),
             magnitudeSpectrum(n1, n0, QImage::Format_Grayscale8),
@@ -62,23 +55,22 @@ void ComputationWorker::doWork() {
     double *angleBuffer = new double[n0 * n1];
     fftw_complex *fourierTransform = new fftw_complex[n0 * n1];
     fftw_complex *croppedFourierTransform = new fftw_complex[n0 * n1];
-    cv::Mat frame;
+    std::vector<unsigned char> frame;
 
     /* Plan fourier transform */
     fftw_plan fft1, fft2;
     fft1 = fftw_plan_dft_2d(n0, n1, fourierTransform, fourierTransform, FFTW_FORWARD, FFTW_ESTIMATE);
     fft2 = fftw_plan_dft_2d(n0, n1, croppedFourierTransform, croppedFourierTransform, FFTW_BACKWARD, FFTW_ESTIMATE);
     while(!shouldStop) {
-        cam >> frame;
-        qDebug() << frame.cols << frame.rows;
-        assert(frame.cols == 1280);
-        assert(frame.rows == 720);
+        frame = cam->capture();
+
 
         for(int y=0; y<n0; y++) {
             for(int x=0; x<n1; x++) {
                 //cameraBuffer[y*n1+x] = frame.at<unsigned char>(3*(y*n1+x)+0);
-                cameraImg.bits()[y*n1+x] = frame.at<unsigned char>(1*(y*n1+x));
-                fourierTransform[y*n1+x][0] = frame.at<unsigned char>(1*(y*n1+x)) / 255.0;
+                //cameraImg.bits()[y*n1+x] = frame.at<unsigned char>(1*(y*n1+x));
+                cameraImg.bits()[y*n1+x] = frame[3*(y*n1+x)+0];
+                fourierTransform[y*n1+x][0] = frame[3*(y*n1+x)+0] / 255.0;
                 fourierTransform[y*n1+x][1] = 0.0;
             }
         }
@@ -86,7 +78,7 @@ void ComputationWorker::doWork() {
 
         fftw_execute(fft1);
 
-        fftshift(reinterpret_cast<std::complex<double>*>(fourierTransform), n0, n1);
+        fftshift(reinterpret_cast<std::complex<double>*>(fourierTransform));
         for(int y=0; y<n0; y++)
             for(int x=0; x<n1; x++)
                 magnitudeSpectrum.bits()[y*n1+x] = (abs(reinterpret_cast<std::complex<double>*>(fourierTransform)[y*n1+x]))*0.2;
@@ -111,7 +103,7 @@ void ComputationWorker::doWork() {
         //croppedFourierTransform[650*n1+(720/2)+9][0] = 250;
         //croppedFourierTransform[650*n1+(720/2)+10][0] = 250;
 
-        fftshift(reinterpret_cast<std::complex<double>*>(croppedFourierTransform), n0, n1);
+        fftshift(reinterpret_cast<std::complex<double>*>(croppedFourierTransform));
 
         fftw_execute(fft2);
 

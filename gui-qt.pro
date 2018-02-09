@@ -25,10 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    computationworker.cpp
+    computationworker.cpp \
+    camera/v4l2camera.cpp
 
 HEADERS  += mainwindow.h \
-    computationworker.h
+    computationworker.h \
+    camera/camera.h \
+    camera/v4l2camera.h
 
 FORMS    += mainwindow.ui
 
