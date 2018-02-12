@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui testlib
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -22,18 +22,29 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-
-SOURCES += main.cpp\
-        mainwindow.cpp \
+SOURCES += main.cpp \
+    mainwindow.cpp \
     computationworker.cpp \
-    camera/v4l2camera.cpp
+    camera/v4l2camera.cpp \
+    camera/image.cpp \
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     camera/camera.h \
-    camera/v4l2camera.h
+    camera/v4l2camera.h \
+    camera/image.h \
 
 FORMS    += mainwindow.ui
 
-QMAKE_LFLAGS = -fopenmp `pkg-config --libs opencv fftw3`
+QMAKE_LFLAGS = -fopenmp
 QMAKE_CXXFLAGS = -fopenmp -std=c++17
+
+PKGCONFIG += fftw3
+
+packagesExist(opencv) {
+    PKGCONFIG += opencv
+    DEFINES += USE_V4L2_CAMERA
+}
+
+unix: CONFIG += link_pkgconfig
+CONFIG += c++14

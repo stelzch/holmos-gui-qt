@@ -8,8 +8,11 @@ V4L2Camera::V4L2Camera()
 void V4L2Camera::open() {
     /** TODO: Fix default camera number */
     cap.open(0);
-    if(cap.isOpened() == false)
+    if(cap.isOpened() == false) {
         qDebug() << "[ERROR] No camera found";
+        throw new CameraNotFoundException("No such camera");
+    }
+
 }
 
 void V4L2Camera::release() {
@@ -24,7 +27,8 @@ void V4L2Camera::set_resolution(int res_x, int res_y) {
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, res_y);
 }
 
-std::vector<unsigned char> V4L2Camera::capture() {
+Image<float> V4L2Camera::capture() {
+    image.resize(cap.get(CV_CAP_PROP_FRAME_WIDTH), cap.get(CV_CAP_PROP_FRAME_HEIGHT), 3);
 
     cap.grab();
     cap.retrieve(frame);
@@ -33,11 +37,9 @@ std::vector<unsigned char> V4L2Camera::capture() {
     assert(frame.cols == res_x);
     assert(frame.rows == res_y);
 
-    std::vector<unsigned char> tmp;
-    tmp.reserve(res_x * res_y * 3);
-    memcpy(tmp.data(), frame.ptr(), res_x * res_y * 3 * sizeof(uchar));
+    memcpy(image.modifyVector().data(), frame.ptr(), res_x * res_y * 3 * sizeof(uchar));
 
-    return tmp;
+    return image;
 }
 
 V4L2Camera::~V4L2Camera() {

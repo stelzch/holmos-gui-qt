@@ -44,7 +44,12 @@ template<typename T> void ComputationWorker::normalize(T* buffer, int elements) 
 void ComputationWorker::doWork() {
     rectX = rectY = rectR = 0;
     cam = new V4L2Camera();
-    cam->open();
+    try {
+        cam->open();
+    } catch(CameraNotFoundException *e){
+        qDebug() << "Error: " << e->what();
+        return;
+    }
     cam->set_resolution(n1, n0);
 
 
@@ -55,7 +60,7 @@ void ComputationWorker::doWork() {
     double *angleBuffer = new double[n0 * n1];
     fftw_complex *fourierTransform = new fftw_complex[n0 * n1];
     fftw_complex *croppedFourierTransform = new fftw_complex[n0 * n1];
-    std::vector<unsigned char> frame;
+    Image<float> frame;
 
     /* Plan fourier transform */
     fftw_plan fft1, fft2;
@@ -69,8 +74,8 @@ void ComputationWorker::doWork() {
             for(int x=0; x<n1; x++) {
                 //cameraBuffer[y*n1+x] = frame.at<unsigned char>(3*(y*n1+x)+0);
                 //cameraImg.bits()[y*n1+x] = frame.at<unsigned char>(1*(y*n1+x));
-                cameraImg.bits()[y*n1+x] = frame[3*(y*n1+x)+0];
-                fourierTransform[y*n1+x][0] = frame[3*(y*n1+x)+0] / 255.0;
+                cameraImg.bits()[y*n1+x] = frame.modifyVector()[3*(y*n1+x)+0];
+                fourierTransform[y*n1+x][0] = frame.modifyVector()[3*(y*n1+x)+0] / 255.0;
                 fourierTransform[y*n1+x][1] = 0.0;
             }
         }
