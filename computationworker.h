@@ -4,13 +4,14 @@
 #include <cassert>
 #include <iostream>
 #include <complex>
+#include <chrono>
 #include <QDebug>
 #include <QObject>
 #include <QImage>
 #include <QPainter>
 #include <opencv2/opencv.hpp>
 #include <fftw3.h>
-#include "camera/picamera.h"
+#include "raspicam/raspicam.h"
 
 class ComputationWorker : public QObject
 {
@@ -31,7 +32,6 @@ signals:
 public slots:
 private:
     const int n0, n1;
-    PiCamera *cam;
 
 
 };

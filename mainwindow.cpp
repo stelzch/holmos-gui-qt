@@ -3,7 +3,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), ct(nullptr, 960, 1280)
+    ui(new Ui::MainWindow), ct(nullptr, 480, 640)
 {
     ui->setupUi(this);
 

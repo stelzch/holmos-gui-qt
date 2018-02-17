@@ -24,22 +24,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp \
     mainwindow.cpp \
-    computationworker.cpp \
-    camera/v4l2camera.cpp \
-    camera/image.cpp \
-    camera/picamera.cpp
+    computationworker.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
-    camera/camera.h \
-    camera/v4l2camera.h \
-    camera/image.h \
-    camera/picamera.h
+    camera/camera.h
 
 FORMS    += mainwindow.ui
 
-QMAKE_LFLAGS = -fopenmp
-QMAKE_CXXFLAGS = -fopenmp -std=c++17
+QMAKE_LFLAGS = -fopenmp -lfftw3_threads  -O3 -mfpu=neon
+QMAKE_CXXFLAGS = -fopenmp -std=c++17 -O3 -mfpu=neon
 
 PKGCONFIG += fftw3
 
