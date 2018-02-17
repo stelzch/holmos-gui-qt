@@ -27,7 +27,7 @@ void V4L2Camera::set_resolution(int res_x, int res_y) {
     cap.set(CV_CAP_PROP_FRAME_HEIGHT, res_y);
 }
 
-Image<float> V4L2Camera::capture() {
+Image<float> &V4L2Camera::capture() {
     image.resize(cap.get(CV_CAP_PROP_FRAME_WIDTH), cap.get(CV_CAP_PROP_FRAME_HEIGHT), 3);
 
     cap.grab();

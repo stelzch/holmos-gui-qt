@@ -27,12 +27,14 @@ SOURCES += main.cpp \
     computationworker.cpp \
     camera/v4l2camera.cpp \
     camera/image.cpp \
+    camera/picamera.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     camera/camera.h \
     camera/v4l2camera.h \
     camera/image.h \
+    camera/picamera.h
 
 FORMS    += mainwindow.ui
 
@@ -47,4 +49,5 @@ packagesExist(opencv) {
 }
 
 unix: CONFIG += link_pkgconfig
+unix: QMAKE_LFLAGS += -lraspicam
 CONFIG += c++14

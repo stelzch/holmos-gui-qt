@@ -15,7 +15,7 @@ public:
     virtual void set_resolution(int res_x, int res_y) override;
     virtual void open() override;
     virtual void release() override;
-    virtual Image<float> capture() override;
+    virtual Image<float> &capture() override;
     virtual ~V4L2Camera();
 private:
     cv::VideoCapture cap;

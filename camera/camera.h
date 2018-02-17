@@ -11,7 +11,7 @@ public:
     virtual void set_resolution(int res_x, int res_y) = 0;
     virtual void open() = 0;
     virtual void release() = 0;
-    virtual Image<float> capture() = 0;
+    virtual Image<float> &capture() = 0;
     virtual ~Camera() {}
 
 protected:

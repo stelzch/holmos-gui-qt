@@ -10,7 +10,7 @@
 #include <QPainter>
 #include <opencv2/opencv.hpp>
 #include <fftw3.h>
-#include "camera/v4l2camera.h"
+#include "camera/picamera.h"
 
 class ComputationWorker : public QObject
 {
@@ -31,7 +31,7 @@ signals:
 public slots:
 private:
     const int n0, n1;
-    Camera *cam;
+    PiCamera *cam;
 
 
 };

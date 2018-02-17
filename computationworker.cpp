@@ -2,7 +2,7 @@
 
 ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1)
 {
-    cam = new V4L2Camera();
+    cam = new PiCamera();
 }
 template<typename T> void ComputationWorker::fftshift(T* buffer) {
     int yhalf = n0 / 2;
@@ -43,14 +43,15 @@ template<typename T> void ComputationWorker::normalize(T* buffer, int elements) 
 
 void ComputationWorker::doWork() {
     rectX = rectY = rectR = 0;
-    cam = new V4L2Camera();
+    qDebug() << "Setting resolution to " << n1 << n0;
+    cam->set_resolution(n1, n0);
     try {
         cam->open();
     } catch(CameraNotFoundException *e){
         qDebug() << "Error: " << e->what();
         return;
     }
-    cam->set_resolution(n1, n0);
+
 
 
     QImage cameraImg(n1, n0, QImage::Format_Grayscale8),
@@ -67,7 +68,7 @@ void ComputationWorker::doWork() {
     fft1 = fftw_plan_dft_2d(n0, n1, fourierTransform, fourierTransform, FFTW_FORWARD, FFTW_ESTIMATE);
     fft2 = fftw_plan_dft_2d(n0, n1, croppedFourierTransform, croppedFourierTransform, FFTW_BACKWARD, FFTW_ESTIMATE);
     while(!shouldStop) {
-        frame = cam->capture();
+        cam->captureInplace(&frame);
 
 
         for(int y=0; y<n0; y++) {
@@ -81,7 +82,7 @@ void ComputationWorker::doWork() {
         }
         emit cameraImageReady(cameraImg);
 
-        fftw_execute(fft1);
+        //fftw_execute(fft1);
 
         fftshift(reinterpret_cast<std::complex<double>*>(fourierTransform));
         for(int y=0; y<n0; y++)
@@ -110,7 +111,7 @@ void ComputationWorker::doWork() {
 
         fftshift(reinterpret_cast<std::complex<double>*>(croppedFourierTransform));
 
-        fftw_execute(fft2);
+        //fftw_execute(fft2);
 
         /* Calculate the phase angle */
         for(int i=0; i<n0*n1; i++) {
