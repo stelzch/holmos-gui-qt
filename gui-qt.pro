@@ -32,8 +32,8 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-QMAKE_LFLAGS = -fopenmp -lfftw3_threads  -O3 -mfpu=neon
-QMAKE_CXXFLAGS = -fopenmp -std=c++17 -O3 -mfpu=neon
+QMAKE_LFLAGS = -fopenmp -lfftw3_threads  -O3
+QMAKE_CXXFLAGS = -fopenmp -std=c++17 -O3
 
 PKGCONFIG += fftw3
 
@@ -43,5 +43,5 @@ packagesExist(opencv) {
 }
 
 unix: CONFIG += link_pkgconfig
-unix: QMAKE_LFLAGS += -lraspicam
+#unix: QMAKE_LFLAGS += -lraspicam
 CONFIG += c++14

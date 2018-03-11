@@ -3,7 +3,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), ct(nullptr, 480, 640)
+    ui(new Ui::MainWindow), ct(nullptr, 1024, 1024)
 {
     ui->setupUi(this);
 
@@ -19,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->sliderRectY, SIGNAL(valueChanged(int)), this, SLOT(sliderRectYChanged(int)));
     connect(ui->sliderRectR, SIGNAL(valueChanged(int)), this, SLOT(sliderRectRChanged(int)));
 
+    connect(ui->phaseUnwrapCheck, SIGNAL(stateChanged(int)), this, SLOT(phaseUnwrapCheckChanged(int)));
+
     thread1.start();
 
 }
@@ -31,6 +33,10 @@ void MainWindow::sliderRectYChanged(int newval) {
 }
 void MainWindow::sliderRectRChanged(int newval) {
     ct.rectR = newval;
+}
+
+void MainWindow::phaseUnwrapCheckChanged(int newval) {
+    ct.shouldUnwrapPhase = newval;
 }
 
 void MainWindow::cameraImageReceived(QImage img) {

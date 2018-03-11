@@ -11,7 +11,9 @@
 #include <QPainter>
 #include <opencv2/opencv.hpp>
 #include <fftw3.h>
-#include "raspicam/raspicam.h"
+#include <vector>
+#include <algorithm>
+
 
 class ComputationWorker : public QObject
 {
@@ -23,6 +25,7 @@ public:
     template<typename T> void fftshift(T* buffer);
     template<typename T> void normalize(T* buffer, int number);
     int rectX, rectY, rectR;
+    bool shouldUnwrapPhase;
 
 signals:
     void cameraImageReady(QImage);

@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -109,6 +109,17 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QCheckBox" name="phaseUnwrapCheck">
+            <property name="text">
+             <string>Unwrap phase</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <widget class="QLabel" name="phaseAngle">
           <property name="text">
            <string>TextLabel</string>
@@ -127,7 +138,7 @@
      <x>0</x>
      <y>0</y>
      <width>825</width>
-     <height>26</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>

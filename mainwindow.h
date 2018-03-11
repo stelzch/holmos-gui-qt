@@ -25,6 +25,7 @@ public slots:
     void sliderRectXChanged(int);
     void sliderRectYChanged(int);
     void sliderRectRChanged(int);
+    void phaseUnwrapCheckChanged(int);
 
 private:
     Ui::MainWindow *ui;

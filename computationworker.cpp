@@ -1,6 +1,6 @@
 #include "computationworker.h"
 
-ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1)
+ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false)
 {
 
 }
@@ -48,12 +48,15 @@ void ComputationWorker::doWork() {
 
     rectX = rectY = rectR = 0;
 
-
+    cv::Mat image = cv::imread("holmos_raw.png", 0);
+    assert(image.rows == n0);
+    assert(image.cols == n1);
+/*
     raspicam::RaspiCam cam;
     cam.setWidth(n1);
     cam.setHeight(n0);
     cam.setFormat(raspicam::RASPICAM_FORMAT_RGB);
-    cam.open();
+    cam.open();*/
 
     QImage cameraImg(n1, n0, QImage::Format_Grayscale8),
             magnitudeSpectrum(n1, n0, QImage::Format_Grayscale8),
@@ -66,21 +69,54 @@ void ComputationWorker::doWork() {
     fftw_complex *fourierTransform = new fftw_complex[n0 * n1];
     fftw_complex *croppedFourierTransform = new fftw_complex[n0 * n1];
 
+    /* Variables for the phase unwrap */
+    double *r2s = new double[n0 * n1 * 4];
+    double *holo_cos = new double[n0 * n1 * 4];
+    double *holo_sin = new double[n0 * n1 * 4];
+    std::vector<double> x2;
+    std::vector<double> y2;
+    fftw_complex *phi_prime = new fftw_complex[n0 * n1 * 4];
+    for(int x=-n1; x<n1; x++)
+        x2.push_back(pow(x, 2));
+    for(int y=-n0; y<n0; y++)
+        y2.push_back(pow(y, 2));
+
+    std::rotate(x2.begin(), x2.begin()+n1, x2.end());
+    std::rotate(y2.begin(), y2.begin()+n0, y2.end());
+
+    assert(x2.size() == 2*n1);
+    assert(y2.size() == 2*n0);
+    for(int y=0; y<n0*2; y++) {
+        for(int x=0; x<n1*2; x++) {
+            r2s[y*(2*n1)+x] = x2.at(x) + y2.at(y);
+        }
+    }
+    qDebug() << "r2s[10,10] = " << r2s[10*2048+10];
+
     /* Plan fourier transform */
     fftw_plan fft1, fft2;
     fft1 = fftw_plan_dft_2d(n0, n1, fourierTransform, fourierTransform, FFTW_FORWARD, FFTW_MEASURE);
     fft2 = fftw_plan_dft_2d(n0, n1, croppedFourierTransform, croppedFourierTransform, FFTW_BACKWARD, FFTW_MEASURE);
     std::chrono::steady_clock::time_point t1, t2;
     double secs, fps;
+    for(int y=0; y<n0; y++) {
+        for(int x=0; x<n1; x++) {
+            if(y<image.rows && x<image.cols) {
+                buffer[3*(y*n1+x)] = image.at<uchar>(y*n1+x);
+                buffer[3*(y*n1+x)+1] = 0;
+                buffer[3*(y*n1+x)+2] = 0;
+            }
+        }
+    }
     while(!shouldStop) {
         t1 = std::chrono::steady_clock::now();
-        cam.grab();
-        cam.retrieve(buffer);
+        //cam.grab();
+        //cam.retrieve(buffer);
         qDebug() << "Frame";
 
 #pragma omp parallel for
         for(int i=0; i<n0*n1; i++) {
-            cameraImg.bits()[i] = buffer[3*i+0];
+            cameraImg.bits()[i] = image.at<uchar>(i);
             fourierTransform[i][0] = buffer[3*i+0] / 255.0f;
             fourierTransform[i][1] = 0.0f;
         }
@@ -128,7 +164,7 @@ void ComputationWorker::doWork() {
         qDebug() << "Calculation took" << secs << "ms, FPS: " << fps;
     }
     delete [] buffer;
-    cam.release();
+    //cam.release();
 
     fftw_cleanup_threads();
 }
