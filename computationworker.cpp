@@ -83,13 +83,16 @@ void ComputationWorker::doWork() {
 
     MGrayImage img = MGrayImage::loadFromFile("holmos_raw.png");
     MComplexImage cimg = MComplexImage::fromGrayImage(img);
+    MComplexImage cropped(n0, n1);
     qDebug() << cimg.getWidth() << "x" << cimg.getHeight();
 
     FourierTransformer ft;
     ft.planFFTFor(cimg, true);
+    ft.planFFTFor(cropped, false);
 
 
     qDebug() << img.getWidth() << "x" << img.getHeight();
+    auto i = 0;
     while(!shouldStop) {
 
         emit cameraImageReady(img.asQImage());
@@ -103,6 +106,23 @@ void ComputationWorker::doWork() {
         auto magspec = cimg2.getMagnitudeSpectrum() / 500.0;
 
         emit magnitudeSpectrumReady(magspec.asQImage());
+
+        qDebug() << rectX << rectY;
+        auto satellite = cimg2.getSector(rectX-rectR, rectY-rectR, rectR*2);
+        cropped.initValue(std::complex<double>(0.0, 0.0));
+        cropped.setSector((n1 / 2)-rectR, (n0 / 2)-rectR, satellite);
+
+        //emit phaseAngleReady((cropped.getMagnitudeSpectrum() / 500.0).asQImage());
+
+        cropped.fftshift();
+        ft.executeFFT(cropped, false);
+
+        auto phaseAngle = cropped.getAngle();
+        phaseAngle += M_PI;
+        phaseAngle /= 2*M_PI;
+
+        emit phaseAngleReady((phaseAngle * 255.0).asQImage());
+        qDebug() << "Frame ready: " << i++;
     }
 
 

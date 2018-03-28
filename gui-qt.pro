@@ -25,7 +25,8 @@ SOURCES += \
     mimage.cpp \
     mcompleximage.cpp \
     fouriertransformer.cpp \
-    imageselect.cpp
+    imageselect.cpp \
+    scaledimageview.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
@@ -33,7 +34,8 @@ HEADERS  += mainwindow.h \
     mimage.h \
     mcompleximage.h \
     fouriertransformer.h \
-    imageselect.h
+    imageselect.h \
+    scaledimageview.h
 
 FORMS    += mainwindow.ui
 

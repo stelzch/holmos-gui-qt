@@ -199,6 +199,32 @@ MGrayImage MGrayImage::operator/(const double b) const {
     return img;
 }
 
+MGrayImage MGrayImage::operator+=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) + b;
+
+    return *this;
+}
+MGrayImage MGrayImage::operator-=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) - b;
+
+    return *this;
+}
+MGrayImage MGrayImage::operator*=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) * b;
+
+    return *this;
+}
+MGrayImage MGrayImage::operator/=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) / b;
+
+    return *this;
+}
+
+
 QImage MGrayImage::asQImage() const {
     QImage img(n1, n0, QImage::Format_Grayscale8);
 

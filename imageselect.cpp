@@ -28,20 +28,16 @@ void ImageSelect::paintEvent(QPaintEvent *ev) {
 
     painter.drawImage(imgX, imgY, scaledImg);
 
-    QPen outlinePen(Qt::white, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    QPen outlinePen(Qt::white, 2, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(outlinePen);
+    painter.setBrush(Qt::transparent);
 
-    //if(indicatorR != 0) {
-        painter.setPen(Qt::white);
-        painter.setBrush(Qt::white);
-
-        auto topLeft = QPoint(imgX + (selectX - indicatorR)  * (scaledImg.width() / float(img.width())),
+    if(indicatorR != 0) {
+        auto topLeft = QPoint(imgX + (selectX - indicatorR) * (scaledImg.width() / float(img.width())),
                               imgY + (selectY - indicatorR) * (scaledImg.height() / float(img.height())));
-        painter.drawRect(QRect(topLeft, QSize(indicatorR*2, indicatorR*2)));
-    //}
-    painter.drawRect(0, 0, 200, 200);
-    qDebug() << (imgX-indicatorR) * (scaledImg.width() / float(img.width()));
-    qDebug() << indicatorR;
+        painter.drawRect(QRect(topLeft, QSize(indicatorR*2 * (scaledImg.width() / float(img.width())),
+                                              indicatorR*2 * (scaledImg.height() / float(img.height())))));
+    }
 }
 
 void ImageSelect::mouseDoubleClickEvent(QMouseEvent *evt) {
@@ -52,7 +48,6 @@ void ImageSelect::mouseDoubleClickEvent(QMouseEvent *evt) {
     selectedX = max(0, min(selectedX, img.width()));
     selectedY = max(0, min(selectedY, img.height()));
 
-    qDebug() << "Clicked at " << selectedX << "|" << selectedY;
     this->repaint();
     this->update();
     emit pointSelected(QPoint(selectedX, selectedY));
@@ -62,8 +57,17 @@ void ImageSelect::mouseDoubleClickEvent(QMouseEvent *evt) {
 }
 
 void ImageSelect::setIndicatorRadius(unsigned int r) {
-    qDebug() << "Radius: " << r;
     indicatorR = r;
+    this->repaint();
+}
+
+void ImageSelect::updateXPos(unsigned int x) {
+    selectX = x;
+    this->repaint();
+}
+
+void ImageSelect::updateYPos(unsigned int y) {
+    selectY = y;
     this->repaint();
 }
 

@@ -79,7 +79,7 @@
           <item row="0" column="1">
            <widget class="QSlider" name="sliderRectX">
             <property name="maximum">
-             <number>1280</number>
+             <number>1024</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -89,7 +89,7 @@
           <item row="1" column="1">
            <widget class="QSlider" name="sliderRectY">
             <property name="maximum">
-             <number>720</number>
+             <number>1024</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -133,7 +133,7 @@
              <x>0</x>
              <y>0</y>
              <width>783</width>
-             <height>162</height>
+             <height>255</height>
             </rect>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_4">

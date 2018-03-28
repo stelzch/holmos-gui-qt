@@ -218,6 +218,35 @@ MComplexImage MComplexImage::operator/(const double b) const {
     return img;
 }
 
+
+MComplexImage MComplexImage::operator+=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) + b;
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator-=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) - b;
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator*=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) * b;
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator/=(const double b) {
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) / b;
+
+    return *this;
+}
+
 MComplexImage MComplexImage::operator=(const MComplexImage &b) {
     return MComplexImage(b);
 }

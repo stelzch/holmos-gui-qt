@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QImage>
 #include "imageselect.h"
+#include "scaledimageview.h"
 #include "computationworker.h"
 
 namespace Ui {
@@ -35,6 +36,7 @@ private:
     ComputationWorker ct;
     QThread thread1;
     ImageSelect satelliteSelector;
+    ScaledImageView cameraViewer, phaseViewer;
 
 };
 

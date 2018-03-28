@@ -44,6 +44,11 @@ public:
     MGrayImage operator*(const double b) const;
     MGrayImage operator/(const double b) const;
 
+    MGrayImage operator+=(const double b);
+    MGrayImage operator-=(const double b);
+    MGrayImage operator*=(const double b);
+    MGrayImage operator/=(const double b);
+
     QImage asQImage() const;
     //MComplexImage asComplex() const;
 signals:

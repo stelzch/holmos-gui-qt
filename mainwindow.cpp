@@ -22,7 +22,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->phaseUnwrapCheck, SIGNAL(stateChanged(int)), this, SLOT(phaseUnwrapCheckChanged(int)));
 
+    connect(&satelliteSelector, SIGNAL(pointSelected(QPoint)), this, SLOT(satellitePointSelected(QPoint)));
+
+    ui->scrollAreaTab1->setWidget(&cameraViewer);
     ui->scrollAreaTab2->setWidget(&satelliteSelector);
+    ui->scrollArea_3->setWidget(&phaseViewer);
+
 
     thread1.start();
 
@@ -30,9 +35,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::sliderRectXChanged(int newval) {
     ct.rectX = newval;
+    satelliteSelector.updateXPos(newval);
 }
 void MainWindow::sliderRectYChanged(int newval) {
     ct.rectY = newval;
+    satelliteSelector.updateYPos(newval);
 }
 void MainWindow::sliderRectRChanged(int newval) {
     ct.rectR = newval;
@@ -46,10 +53,13 @@ void MainWindow::phaseUnwrapCheckChanged(int newval) {
 void MainWindow::satellitePointSelected(QPoint p) {
     emit sliderRectXChanged(p.x());
     emit sliderRectYChanged(p.y());
+
+    ui->sliderRectX->setValue(p.x());
+    ui->sliderRectY->setValue(p.y());
 }
 
 void MainWindow::cameraImageReceived(QImage img) {
-    ui->cameraImage->setPixmap(QPixmap::fromImage(img).scaled(ui->scrollAreaTab1->width(), ui->cameraImage->height(), Qt::KeepAspectRatio));
+    cameraViewer.setImage(img);
 }
 
 void MainWindow::magnitudeSpectrumReceived(QImage img) {
@@ -58,7 +68,7 @@ void MainWindow::magnitudeSpectrumReceived(QImage img) {
 }
 
 void MainWindow::phaseAngleReceived(QImage img) {
-    ui->phaseAngle->setPixmap(QPixmap::fromImage(img).scaled(ui->cameraImage->width(), ui->cameraImage->height()));
+    phaseViewer.setImage(img);
 }
 
 MainWindow::~MainWindow()

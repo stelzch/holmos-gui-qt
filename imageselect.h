@@ -20,6 +20,8 @@ signals:
 public slots:
     void setImage(QImage&);
     void setIndicatorRadius(unsigned int);
+    void updateXPos(unsigned int);
+    void updateYPos(unsigned int);
 protected:
     void paintEvent(QPaintEvent*) override;
     void mouseDoubleClickEvent(QMouseEvent*) override;
