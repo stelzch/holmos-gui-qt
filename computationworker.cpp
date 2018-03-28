@@ -92,15 +92,17 @@ void ComputationWorker::doWork() {
     qDebug() << img.getWidth() << "x" << img.getHeight();
     while(!shouldStop) {
 
-
+        emit cameraImageReady(img.asQImage());
         MComplexImage cimg2 = MComplexImage::fromGrayImage(img);
-        auto magspec = cimg2.getMagnitudeSpectrum();
-        magspec.normalize();
-        auto magspec2 = magspec * 200.0;
-        emit cameraImageReady(magspec2.asQImage());
-        ft.executeFFT(cimg2, true);
 
-        emit magnitudeSpectrumReady((cimg2.getMagnitudeSpectrum() / 500.0).asQImage());
+
+
+        ft.executeFFT(cimg2, true);
+        cimg2.fftshift();
+
+        auto magspec = cimg2.getMagnitudeSpectrum() / 500.0;
+
+        emit magnitudeSpectrumReady(magspec.asQImage());
     }
 
 

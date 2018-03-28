@@ -26,6 +26,7 @@ public:
 
     void initValue(std::complex<double>);
     void normalize();
+    void fftshift();
 
     MComplexImage operator+(const MGrayImage &b) const;
     MComplexImage operator-(const MGrayImage &b) const;

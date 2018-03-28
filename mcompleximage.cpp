@@ -81,6 +81,37 @@ void MComplexImage::normalize() {
     *this = *this / maxval;
 }
 
+void MComplexImage::fftshift() {
+    unsigned int yhalf = getHeight() / 2;
+    unsigned int xhalf = getWidth() / 2;
+
+    auto buffer = getData();
+
+    /* Swap upper-left with bottom-right */
+    for(int y=0; y<yhalf; y++) {
+        for(int x=0; x<xhalf; x++) {
+            std::complex<double> tmp;
+            int coord_upper_left = y*n1+x;
+            int coord_bottom_right = (y+yhalf)*n1+x+xhalf;
+            tmp = buffer[coord_upper_left];
+            buffer[coord_upper_left] = buffer[coord_bottom_right];
+            buffer[coord_bottom_right] = tmp;
+        }
+    }
+
+    /* Swap bottom-left with upper-right */
+    for(int y=yhalf; y<n0; y++) {
+        for(int x=0; x<xhalf; x++) {
+            std::complex<double> tmp;
+            int coord_bottom_left = y*n1+x;
+            int coord_upper_right = (y-yhalf)*n1+x+xhalf;
+            tmp = buffer[coord_bottom_left];
+            buffer[coord_bottom_left] = buffer[coord_upper_right];
+            buffer[coord_upper_right] = tmp;
+        }
+    }
+}
+
 MComplexImage MComplexImage::operator+(const MGrayImage &b) const {
     unsigned int new_width = min(getWidth(), b.getWidth());
     unsigned int new_height = min(getHeight(), b.getHeight());
