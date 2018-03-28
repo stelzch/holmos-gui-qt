@@ -1,9 +1,37 @@
 #include "computationworker.h"
+#include "mimage.h"
+#include "mcompleximage.h"
+#include "fouriertransformer.h"
 
 ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false)
 {
 
 }
+
+std::vector<double> ComputationWorker::getMagnitudeSpectrum(std::complex<double> *buffer, unsigned int n0, unsigned int n1) {
+    std::vector<double> buf;
+    buf.resize(n0 * n1);
+    for(int y=0; y<n0; y++) {
+        for(int x=0; x<n1; x++) {
+            buf[y*n1+x] = abs(buffer[y*n1+x]);
+        }
+    }
+
+    return buf;
+}
+
+template<typename T> QImage ComputationWorker::bufferToQImage(T* buffer, unsigned int n0, unsigned int n1) {
+    QImage img(n1, n0, QImage::Format_Grayscale8);
+
+    for(int y=0; y<n0; y++) {
+        for(int x=0; x<n1; x++) {
+            img.bits()[y*n1+x] = static_cast<uchar>(buffer[y*n1+x]);
+        }
+    }
+
+    return img;
+}
+
 template<typename T> void ComputationWorker::fftshift(T* buffer) {
     int yhalf = n0 / 2;
     int xhalf = n1 / 2;
@@ -51,12 +79,37 @@ void ComputationWorker::doWork() {
     cv::Mat image = cv::imread("holmos_raw.png", 0);
     assert(image.rows == n0);
     assert(image.cols == n1);
-/*
+
+
+    MGrayImage img = MGrayImage::loadFromFile("holmos_raw.png");
+    MComplexImage cimg = MComplexImage::fromGrayImage(img);
+    qDebug() << cimg.getWidth() << "x" << cimg.getHeight();
+
+    FourierTransformer ft;
+    ft.planFFTFor(cimg, true);
+
+
+    qDebug() << img.getWidth() << "x" << img.getHeight();
+    while(!shouldStop) {
+
+
+        MComplexImage cimg2 = MComplexImage::fromGrayImage(img);
+        auto magspec = cimg2.getMagnitudeSpectrum();
+        magspec.normalize();
+        auto magspec2 = magspec * 200.0;
+        emit cameraImageReady(magspec2.asQImage());
+        ft.executeFFT(cimg2, true);
+
+        emit magnitudeSpectrumReady((cimg2.getMagnitudeSpectrum() / 500.0).asQImage());
+    }
+
+
+/*/*
     raspicam::RaspiCam cam;
     cam.setWidth(n1);
     cam.setHeight(n0);
     cam.setFormat(raspicam::RASPICAM_FORMAT_RGB);
-    cam.open();*/
+    cam.open();*
 
     QImage cameraImg(n1, n0, QImage::Format_Grayscale8),
             magnitudeSpectrum(n1, n0, QImage::Format_Grayscale8),
@@ -64,18 +117,33 @@ void ComputationWorker::doWork() {
 
     QPainter spectrumPainter(&magnitudeSpectrum);
     unsigned char *buffer = new unsigned char[n0*n1*3];
+    double *phaseAngleBuffer = new double[n0*n1];
     fftw_init_threads();
     fftw_plan_with_nthreads(4);
     fftw_complex *fourierTransform = new fftw_complex[n0 * n1];
     fftw_complex *croppedFourierTransform = new fftw_complex[n0 * n1];
 
-    /* Variables for the phase unwrap */
+    * Variables for the phase unwrap *
     double *r2s = new double[n0 * n1 * 4];
     double *holo_cos = new double[n0 * n1 * 4];
     double *holo_sin = new double[n0 * n1 * 4];
+    double *mirrored = new double[n0 * n1 * 4];
     std::vector<double> x2;
     std::vector<double> y2;
-    fftw_complex *phi_prime = new fftw_complex[n0 * n1 * 4];
+    std::complex<double> *phi_prime = new std::complex<double>[n0 * n1 * 4];
+    std::complex<double> *unwrap_fft_buffer = new std::complex<double>[n0 * n1 * 4];
+    std::complex<double> *unwrap_fft_buffer2 = new std::complex<double>[n0 * n1 * 4];
+
+    fftw_plan fft3 = fftw_plan_dft_r2c_2d(n0, n1, holo_sin, reinterpret_cast<fftw_complex*>(unwrap_fft_buffer), FFTW_MEASURE);
+    fftw_plan fft4 = fftw_plan_dft_r2c_2d(n0, n1, holo_cos, reinterpret_cast<fftw_complex*>(unwrap_fft_buffer), FFTW_MEASURE);
+    fftw_plan fft5 = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(unwrap_fft_buffer),
+                                                                              reinterpret_cast<fftw_complex*>(unwrap_fft_buffer2), FFTW_BACKWARD, FFTW_MEASURE);
+    fftw_plan fft6 = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(unwrap_fft_buffer),
+                                                                              reinterpret_cast<fftw_complex*>(unwrap_fft_buffer), FFTW_BACKWARD, FFTW_MEASURE);
+    fftw_plan fft7 = fftw_plan_dft_2d(n0, n1, reinterpret_cast<fftw_complex*>(unwrap_fft_buffer),
+                                                                              reinterpret_cast<fftw_complex*>(unwrap_fft_buffer), FFTW_FORWARD, FFTW_MEASURE);
+
+
     for(int x=-n1; x<n1; x++)
         x2.push_back(pow(x, 2));
     for(int y=-n0; y<n0; y++)
@@ -88,12 +156,12 @@ void ComputationWorker::doWork() {
     assert(y2.size() == 2*n0);
     for(int y=0; y<n0*2; y++) {
         for(int x=0; x<n1*2; x++) {
-            r2s[y*(2*n1)+x] = x2.at(x) + y2.at(y);
+            r2s[y*(2*n1)+x] = x2.at(x) + y2.at(y) + 1e-6;
         }
     }
     qDebug() << "r2s[10,10] = " << r2s[10*2048+10];
 
-    /* Plan fourier transform */
+    * Plan fourier transform *
     fftw_plan fft1, fft2;
     fft1 = fftw_plan_dft_2d(n0, n1, fourierTransform, fourierTransform, FFTW_FORWARD, FFTW_MEASURE);
     fft2 = fftw_plan_dft_2d(n0, n1, croppedFourierTransform, croppedFourierTransform, FFTW_BACKWARD, FFTW_MEASURE);
@@ -136,7 +204,7 @@ void ComputationWorker::doWork() {
 
         emit magnitudeSpectrumReady(magnitudeSpectrum);
 
-        /* Copy ROI to cropppedFourierTransform */
+        * Copy ROI to cropppedFourierTransform *
         memset(croppedFourierTransform, 0, sizeof(fftw_complex) * n0 * n1);
         for(int y=rectY; y<(rectY+rectR*2); y++) {
             for(int x=rectX; x<(rectX+rectR*2); x++) {
@@ -151,13 +219,91 @@ void ComputationWorker::doWork() {
 
         fftw_execute(fft2);
 
-        /* Calculate the phase angle */
+        * Calculate the phase angle *
         for(int i=0; i<n0*n1; i++) {
-                phaseAngle.bits()[i] = (atan2(croppedFourierTransform[i][0], croppedFourierTransform[i][1]) + M_PI) / (2 * M_PI) * 255;
+            phaseAngleBuffer[i] = atan2(croppedFourierTransform[i][0], croppedFourierTransform[i][1]);
+        }
+        if(shouldUnwrapPhase) {
+            // Fill mirrored array
+            for(int y=0; y<n0; y++) {
+                for(int x=0; x<n1; x++) {
+                    mirrored[y*n1*2+x] = phaseAngleBuffer[y*n1+x];
+                    mirrored[y*n1*2+(x+n1)] = phaseAngleBuffer[y*n1+(n1-x)];
+                    mirrored[(y+n0)*n1*2+x] = phaseAngleBuffer[(n0-y)*n1+x];
+                    mirrored[(y+n0)*n1*2+(x+n1)] = phaseAngleBuffer[(n0-y)*n1+(n1-x)];
+
+
+                }
+            }
+            qDebug() << "mirrored[0,0]" << mirrored[0];
+            qDebug() << "mirrored[2000,0]" << mirrored[0*n1+2000];
+            qDebug() << "mirrored[2000,2000]" << mirrored[2000*n1+2000];
+            qDebug() << "mirrored[2000,0]" << mirrored[2000*n1+0];
+            for(int y=0; y<n0*2; y++) {
+                for(int x=0; x<n1*2; x++) {
+                    holo_cos[y*n1*2+x] = cos(mirrored[y*n1*2+x]);
+                    holo_sin[y*n1*2+x] = sin(mirrored[y*n1*2+x]);
+                }
+            }
+            * fft3: holo_sin -> unwrap_fft_buffer (F)
+             * fft4: holo_cos -> unwrap_fft_buffer (F)
+             * fft5: unwrap_fft_buffer -> unwrap_fft_buffer2 (B)
+             * fft6: unwrap_fft_buffer -> unwrap_fft_buffer  (B)
+             * fft7: unwrap_fft_buffer -> unwrap_fft_buffer  (F)
+             *
+            fftw_execute(fft3);
+            emit phaseAngleReady(bufferToQImage(getMagnitudeSpectrum(unwrap_fft_buffer, n0, n1).data(), n0, n1));
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer[i] *= r2s[i];
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            fftw_execute(fft5);
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer2[i] += holo_cos[i];
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            fftw_execute(fft4);
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer[i] *= r2s[i];
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            fftw_execute(fft6);
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer[i] += holo_sin[i];
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer[i] = unwrap_fft_buffer2[i] - unwrap_fft_buffer[i];
+            fftw_execute(fft7);
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            for(int i=0; i<n0*n1*4; i++)
+                unwrap_fft_buffer[i] /= r2s[i];
+            qDebug() << unwrap_fft_buffer[0].real();
+
+            fftw_execute(fft6);
+            qDebug() << unwrap_fft_buffer[1].real();
+
+            for(int y=0; y<n0; y++) {
+                for(int x=0; x<n1; x++) {
+                    double phi_ = unwrap_fft_buffer[y*n1+x].real();
+                    double unwrapped_phase = (phaseAngleBuffer[y*n1+x] * 2*M_PI*round((phi_ - phaseAngleBuffer[y*n1+x]) / 2 / M_PI));
+                    phaseAngle.bits()[y*n1+x] = (unwrapped_phase + M_PI) / (2*M_PI) * 255;
+                }
+                //if(y%50==0)
+                //qDebug() << phaseAngle.bits()[y*n1];
+            }
+        } else {
+            for(int i=0; i<n0*n1; i++) {
+                phaseAngle.bits()[i] = (phaseAngleBuffer[i] + M_PI) / (2 * M_PI) * 255;
+            }
+            emit phaseAngleReady(phaseAngle);
         }
 
 
-        emit phaseAngleReady(phaseAngle);
+
+
+
         t2 = std::chrono::steady_clock::now();
         secs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         fps = 1 / (secs / 1000.0);
@@ -166,5 +312,13 @@ void ComputationWorker::doWork() {
     delete [] buffer;
     //cam.release();
 
-    fftw_cleanup_threads();
+    fftw_destroy_plan(fft1);
+    fftw_destroy_plan(fft2);
+    fftw_destroy_plan(fft3);
+    fftw_destroy_plan(fft4);
+    fftw_destroy_plan(fft5);
+    fftw_destroy_plan(fft6);
+    fftw_destroy_plan(fft7);
+
+    fftw_cleanup_threads(); */
 }

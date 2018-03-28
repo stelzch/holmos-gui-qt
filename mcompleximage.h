@@ -5,6 +5,7 @@
 #include <vector>
 #include <complex>
 #include <cassert>
+#include <fftw3.h>
 #include "mimage.h"
 
 class MComplexImage : public QObject
@@ -15,19 +16,35 @@ public:
     MComplexImage(const MComplexImage&);
     MComplexImage(const MGrayImage&);
 
+    static MComplexImage fromGrayImage(MGrayImage&);
+
     std::complex<double> *getData();
     std::complex<double> getAt(unsigned int i) const;
+    std::complex<double> getAt(unsigned int x, unsigned int y) const;
     unsigned int getWidth() const;
-        unsigned int getHeight() const;
+    unsigned int getHeight() const;
+
+    void initValue(std::complex<double>);
+    void normalize();
 
     MComplexImage operator+(const MGrayImage &b) const;
     MComplexImage operator-(const MGrayImage &b) const;
     MComplexImage operator*(const MGrayImage &b) const;
     MComplexImage operator/(const MGrayImage &b) const;
 
+    MComplexImage operator+(const double b) const;
+    MComplexImage operator-(const double b) const;
+    MComplexImage operator*(const double b) const;
+    MComplexImage operator/(const double b) const;
+
+    MComplexImage operator=(const MComplexImage &b);
+
     MGrayImage getMagnitudeSpectrum() const;
+    MGrayImage getAngle() const;
     MComplexImage getSector(unsigned int x, unsigned int y, unsigned int size) const;
     void setSector(unsigned int x, unsigned int y, MComplexImage&);
+
+    void fftInplace();
 
 
 signals:

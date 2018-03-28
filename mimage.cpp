@@ -1,4 +1,5 @@
 #include "mimage.h"
+#include <QDebug>
 
 MGrayImage::MGrayImage(unsigned int n0, unsigned int n1, QObject *parent) : QObject(parent), n0(n0), n1(n1)
 {
@@ -10,6 +11,17 @@ MGrayImage::MGrayImage(const MGrayImage &src)  : QObject() {
     n0 = src.getHeight();
     n1 = src.getWidth();
     data = src.data;
+}
+
+MGrayImage MGrayImage::loadFromFile(const char *filename) {
+    cv::Mat cvimg = cv::imread(filename, cv::IMREAD_GRAYSCALE);
+    MGrayImage img(cvimg.rows, cvimg.cols);
+
+    for(unsigned int i=0; i<cvimg.rows*cvimg.cols; i++) {
+        img.getData()[i] = static_cast<double>(cvimg.data[i]);
+    }
+
+    return img;
 }
 
 double *MGrayImage::getData() {
@@ -56,6 +68,31 @@ void MGrayImage::zeros() {
 void MGrayImage::initValue(double x) {
     for(unsigned int i=0; i<getWidth() * getHeight(); i++)
         getData()[i] = x;
+}
+
+void MGrayImage::normalize() {
+    double minval=0.0, maxval=1.0;
+
+    for(auto it : data) {
+        if(it > maxval) maxval = it;
+        if(it < minval) minval = it;
+    }
+    qDebug() << "Max: " << maxval << " Min: " << minval;
+
+    if(minval<0.0) {
+        *this = *this + minval;
+        maxval += minval;
+    } else {
+        *this = *this - minval;
+        maxval -= minval;
+    }
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++) {
+        if(minval<0.0) {
+            getData()[i] = (getAt(i) + minval) / (maxval + minval);
+        } else {
+            getData()[i] = (getAt(i) - minval) / (maxval - minval);
+        }
+    }
 }
 
 /* ==== OPERATORS ======= */
@@ -120,3 +157,63 @@ MGrayImage MGrayImage::operator/(const MGrayImage &b) const {
 
     return div;
 }
+
+MGrayImage MGrayImage::operator=(const MGrayImage &b) {
+    return MGrayImage(b);
+}
+
+
+MGrayImage MGrayImage::operator+(const double b) const {
+    MGrayImage img(*this);
+
+    for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
+        img.getData()[i] = getAt(i) + b;
+
+    return img;
+}
+
+MGrayImage MGrayImage::operator-(const double b) const {
+    MGrayImage img(*this);
+
+    for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
+        img.getData()[i] = getAt(i) - b;
+
+    return img;
+}
+
+MGrayImage MGrayImage::operator*(const double b) const {
+    MGrayImage img(*this);
+
+    for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
+        img.getData()[i] = getAt(i) * b;
+
+    return img;
+}
+
+MGrayImage MGrayImage::operator/(const double b) const {
+    MGrayImage img(*this);
+
+    for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
+        img.getData()[i] = getAt(i) / b;
+
+    return img;
+}
+
+QImage MGrayImage::asQImage() const {
+    QImage img(n1, n0, QImage::Format_Grayscale8);
+
+    for(unsigned int i=0; i<n0*n1; i++)
+        img.bits()[i] = static_cast<uchar>(getAt(i));
+
+    return img;
+}
+/*
+MComplexImage MGrayImage::asComplex() const {
+    MComplexImage cimg(n0, n1);
+    cimg.initValue(std::complex<double>(0.0, 0.0));
+
+    for(unsigned int i=0; i<n0*n1; i++)
+        cimg.getData()[i].real(getAt(i));
+
+    return cimg;
+}*/

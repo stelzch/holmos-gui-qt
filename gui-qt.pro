@@ -23,18 +23,20 @@ SOURCES += \
     mainwindow.cpp \
     computationworker.cpp \
     mimage.cpp \
-    mcompleximage.cpp
+    mcompleximage.cpp \
+    fouriertransformer.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     camera/camera.h \
     mimage.h \
-    mcompleximage.h
+    mcompleximage.h \
+    fouriertransformer.h
 
 FORMS    += mainwindow.ui
 
-QMAKE_LFLAGS = -fopenmp -lfftw3_threads  -O3
-QMAKE_CXXFLAGS = -fopenmp -std=c++17 -O3
+QMAKE_LFLAGS = -fopenmp -lfftw3_threads # -O3
+QMAKE_CXXFLAGS = -fopenmp -std=c++17 #-O3
 
 PKGCONFIG += fftw3
 
@@ -44,7 +46,9 @@ packagesExist(opencv) {
 }
 
 test {
+    CONFIG += debug
     TARGET = gui-qt-tests
+
     TEMPLATE = app
     message(Configuring test build...)
     SOURCES += test/testmimage.cpp
