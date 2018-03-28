@@ -24,14 +24,16 @@ SOURCES += \
     computationworker.cpp \
     mimage.cpp \
     mcompleximage.cpp \
-    fouriertransformer.cpp
+    fouriertransformer.cpp \
+    imageselect.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     camera/camera.h \
     mimage.h \
     mcompleximage.h \
-    fouriertransformer.h
+    fouriertransformer.h \
+    imageselect.h
 
 FORMS    += mainwindow.ui
 

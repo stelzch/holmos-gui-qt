@@ -3,7 +3,9 @@
 
 #include <QMainWindow>
 #include <QThread>
+#include <QPoint>
 #include <QImage>
+#include "imageselect.h"
 #include "computationworker.h"
 
 namespace Ui {
@@ -26,11 +28,14 @@ public slots:
     void sliderRectYChanged(int);
     void sliderRectRChanged(int);
     void phaseUnwrapCheckChanged(int);
+    void satellitePointSelected(QPoint);
 
 private:
     Ui::MainWindow *ui;
     ComputationWorker ct;
     QThread thread1;
+    ImageSelect satelliteSelector;
+
 };
 
 #endif // MAINWINDOW_H
