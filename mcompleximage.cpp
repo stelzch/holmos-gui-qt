@@ -37,6 +37,15 @@ MComplexImage MComplexImage::fromGrayImage(MGrayImage& img) {
     return cimg;
 }
 
+void MComplexImage::loadGrayImage(MGrayImage img) {
+    assert(img.getWidth() == getWidth());
+    assert(img.getHeight() == getHeight());
+    initValue(std::complex<double>(0.0, 0.0));
+
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = img.getAt(i);
+}
+
 std::complex<double> *MComplexImage::getData() {
     return data.data();
 }
@@ -182,6 +191,66 @@ MComplexImage MComplexImage::operator/(const MGrayImage &b) const {
     return div;
 }
 
+MComplexImage MComplexImage::operator+(const MComplexImage &b) const {
+    unsigned int new_width = min(getWidth(), b.getWidth());
+    unsigned int new_height = min(getHeight(), b.getHeight());
+
+    MComplexImage sum(new_height, new_width);
+
+    for(unsigned int y=0; y<new_height; y++) {
+        for(unsigned int x=0; x<new_width; x++) {
+            sum.getData()[y*new_width+x] = getAt(x, y) + b.getAt(x, y);
+        }
+    }
+
+    return sum;
+}
+
+MComplexImage MComplexImage::operator-(const MComplexImage &b) const {
+    unsigned int new_width = min(getWidth(), b.getWidth());
+    unsigned int new_height = min(getHeight(), b.getHeight());
+
+    MComplexImage diff(new_height, new_width);
+
+    for(unsigned int y=0; y<new_height; y++) {
+        for(unsigned int x=0; x<new_width; x++) {
+            diff.getData()[y*new_width+x] = getAt(x, y) - b.getAt(x, y);
+        }
+    }
+
+    return diff;
+}
+
+MComplexImage MComplexImage::operator*(const MComplexImage &b) const {
+    unsigned int new_width = min(getWidth(), b.getWidth());
+    unsigned int new_height = min(getHeight(), b.getHeight());
+
+    MComplexImage mul(new_height, new_width);
+
+    for(unsigned int y=0; y<new_height; y++) {
+        for(unsigned int x=0; x<new_width; x++) {
+            mul.getData()[y*new_width+x] = getAt(x, y) * b.getAt(x, y);
+        }
+    }
+
+    return mul;
+}
+
+MComplexImage MComplexImage::operator/(const MComplexImage &b) const {
+    unsigned int new_width = min(getWidth(), b.getWidth());
+    unsigned int new_height = min(getHeight(), b.getHeight());
+
+    MComplexImage div(new_height, new_width);
+
+    for(unsigned int y=0; y<new_height; y++) {
+        for(unsigned int x=0; x<new_width; x++) {
+            div.getData()[y*new_width+x] = getAt(x, y) / b.getAt(x, y);
+        }
+    }
+
+    return div;
+}
+
 MComplexImage MComplexImage::operator+(const double b) const {
     MComplexImage img(*this);
 
@@ -256,6 +325,7 @@ MGrayImage MComplexImage::getMagnitudeSpectrum() const {
 
     for(unsigned int i=0; i<n0*n1; i++) {
         magspec.getData()[i] = abs(getAt(i));
+        //magspec.getData()[i] = pow(getAt(i).real(), 2) + pow(getAt(i).imag(), 2);
     }
 
     return magspec;
@@ -269,6 +339,15 @@ MGrayImage MComplexImage::getAngle() const {
     }
 
     return angle;
+}
+
+MGrayImage MComplexImage::getReal() {
+    MGrayImage real(n0, n1);
+
+    for(unsigned int i=0; i<n0*n1; i++)
+        real.getData()[i] = getAt(i).real();
+
+    return real;
 }
 
 MComplexImage MComplexImage::getSector(unsigned int x, unsigned int y, unsigned int size) const {
@@ -306,13 +385,22 @@ void MComplexImage::setSector(unsigned int x, unsigned int y, MComplexImage &sec
 }
 
 void MComplexImage::fftInplace() {
+    fftw_complex *buf = fftw_alloc_complex(n0*n1);
+    for(unsigned int i=0; i<n0*n1; i++) {
+        buf[i][0] = getAt(i).real();
+        buf[i][1] = getAt(i).imag();
+    }
+    //buf[100*1024+100][0] = 2000.0;
     fftw_plan p1 = fftw_plan_dft_2d(
                 n0, n1,
-                reinterpret_cast<fftw_complex*>(data.data()),
-                reinterpret_cast<fftw_complex*>(data.data()),
-                FFTW_FORWARD, FFTW_MEASURE  );
-    fftw_execute_dft(p1, reinterpret_cast<fftw_complex*>(data.data()),
-                     reinterpret_cast<fftw_complex*>(data.data()));
+                buf, buf,
+                FFTW_BACKWARD, FFTW_ESTIMATE  );
+    fftw_execute(p1);
     fftw_destroy_plan(p1);
+
+    for(unsigned int i=0; i<n0*n1; i++)
+        getData()[i] = std::complex<double>(buf[i][0], buf[i][1]);
+
+    fftw_free(buf);
 }
 

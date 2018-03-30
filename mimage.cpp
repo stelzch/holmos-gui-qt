@@ -38,6 +38,20 @@ unsigned int MGrayImage::getHeight() const {
     return n0;
 }
 
+double MGrayImage::getMax() const {
+    double val=0.0;
+    for(unsigned int i=0; i<n0*n1; i++)
+        if(val<getAt(i)) val = getAt(i);
+    return val;
+}
+
+double MGrayImage::getMin() const {
+    double val=0.0;
+    for(unsigned int i=0; i<n0*n1; i++)
+        if(val>getAt(i)) val = getAt(i);
+    return val;
+}
+
 void MGrayImage::sineInplace() {
     for(unsigned int i=0; i<n0*n1; i++)
         data.data()[i] = sin(getAt(i));
@@ -77,20 +91,12 @@ void MGrayImage::normalize() {
         if(it > maxval) maxval = it;
         if(it < minval) minval = it;
     }
-    qDebug() << "Max: " << maxval << " Min: " << minval;
-
-    if(minval<0.0) {
-        *this = *this + minval;
-        maxval += minval;
-    } else {
-        *this = *this - minval;
-        maxval -= minval;
-    }
+    //qDebug() << "Max: " << maxval << " Min: " << minval;
     for(unsigned int i=0; i<getWidth()*getHeight(); i++) {
-        if(minval<0.0) {
-            getData()[i] = (getAt(i) + minval) / (maxval + minval);
+        if(minval < 0.0) {
+            getData()[i] = (getAt(i)+abs(minval)) / (maxval+abs(minval));
         } else {
-            getData()[i] = (getAt(i) - minval) / (maxval - minval);
+            getData()[i] = (getAt(i)-minval) / (maxval-minval);
         }
     }
 }
@@ -229,7 +235,7 @@ QImage MGrayImage::asQImage() const {
     QImage img(n1, n0, QImage::Format_Grayscale8);
 
     for(unsigned int i=0; i<n0*n1; i++)
-        img.bits()[i] = static_cast<uchar>(getAt(i));
+        img.bits()[i] = (getAt(i));
 
     return img;
 }

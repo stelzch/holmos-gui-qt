@@ -37,6 +37,7 @@ private:
     QThread thread1;
     ImageSelect satelliteSelector;
     ScaledImageView cameraViewer, phaseViewer;
+    QSettings settings;
 
 };
 

@@ -22,4 +22,6 @@ void ScaledImageView::paintEvent(QPaintEvent *e) {
 
 void ScaledImageView::setImage(QImage &img) {
     this->img = img;
+
+    this->update();
 }

@@ -212,6 +212,16 @@ private slots:
         QVERIFY(cimg2.getAt(39,41) == std::complex<double>(0.0, 0.0));
     }
 
+    void testNormalize() {
+        auto mimg = MGrayImage(50, 50);
+        for(unsigned int i=0; i<mimg.getWidth()*mimg.getHeight(); i++)
+            mimg.getData()[i] = i;
+        mimg.normalize();
+
+        QVERIFY(mimg.getMax() == 1.0);
+        QVERIFY(mimg.getMin() == 0.0);
+    }
+
     void benchmarkFFT() {
         auto cimg3 = MComplexImage(1024, 1024);
         QBENCHMARK {
@@ -224,6 +234,28 @@ private slots:
         QBENCHMARK {
             for(int i=0; i<5; i++)
             ft.executeFFT(*cimg6, cimg4, true);
+        }
+    }
+
+    void benchmarkInplaceOperator() {
+        auto tmp = MComplexImage(*cimg6);
+
+        QBENCHMARK {
+            tmp *= 4.432534;
+        }
+    }
+
+    void benchmarkOperator() {
+        auto tmp = MComplexImage(*cimg6);
+
+        QBENCHMARK {
+            auto tmp2 = tmp * 2.23452345;
+        }
+    }
+
+    void benchmarkCopyConstructor() {
+        QBENCHMARK {
+            auto tmp(*cimg6);
         }
     }
 

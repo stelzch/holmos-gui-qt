@@ -17,6 +17,7 @@ public:
     MComplexImage(const MGrayImage&);
 
     static MComplexImage fromGrayImage(MGrayImage&);
+    void loadGrayImage(MGrayImage);
 
     std::complex<double> *getData();
     std::complex<double> getAt(unsigned int i) const;
@@ -33,6 +34,11 @@ public:
     MComplexImage operator*(const MGrayImage &b) const;
     MComplexImage operator/(const MGrayImage &b) const;
 
+    MComplexImage operator+(const MComplexImage &b) const;
+    MComplexImage operator-(const MComplexImage &b) const;
+    MComplexImage operator*(const MComplexImage &b) const;
+    MComplexImage operator/(const MComplexImage &b) const;
+
     MComplexImage operator+(const double b) const;
     MComplexImage operator-(const double b) const;
     MComplexImage operator*(const double b) const;
@@ -47,6 +53,7 @@ public:
 
     MGrayImage getMagnitudeSpectrum() const;
     MGrayImage getAngle() const;
+    MGrayImage getReal();
     MComplexImage getSector(unsigned int x, unsigned int y, unsigned int size) const;
     void setSector(unsigned int x, unsigned int y, MComplexImage&);
 

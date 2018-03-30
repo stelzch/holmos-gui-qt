@@ -24,6 +24,9 @@ public:
     unsigned int getWidth() const;
     unsigned int getHeight() const;
 
+    double getMax() const;
+    double getMin() const;
+
     void sineInplace();
     void cosineInplace();
     void zeros();

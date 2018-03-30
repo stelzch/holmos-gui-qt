@@ -4,7 +4,8 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), ct(nullptr, 1024, 1024)
+    ui(new Ui::MainWindow), ct(nullptr, 1024, 1024),
+    settings("FRSEM", "HolMOS GUI")
 {
     ui->setupUi(this);
 
@@ -28,6 +29,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollAreaTab2->setWidget(&satelliteSelector);
     ui->scrollArea_3->setWidget(&phaseViewer);
 
+    /* Load slider positions from settings */
+    settings.sync();
+    ui->sliderRectX->setValue(settings.value("satellite/rect_x").value<int>());
+    ui->sliderRectY->setValue(settings.value("satellite/rect_y").value<int>());
+    ui->sliderRectR->setValue(settings.value("satellite/rect_r").value<int>());
+    ct.rectX = settings.value("satellite/rect_x").value<int>();
+    ct.rectY = settings.value("satellite/rect_y").value<int>();
+    ct.rectR = settings.value("satellite/rect_r").value<int>();
+    qDebug() << "RectX: " << ct.rectX;
 
     thread1.start();
 
@@ -73,6 +83,13 @@ void MainWindow::phaseAngleReceived(QImage img) {
 
 MainWindow::~MainWindow()
 {
+    qDebug() << "Ending main window";
+    qDebug() << settings.value("satellite/rect_x", QVariant::Int);
+    settings.setValue("satellite/rect_x", ct.rectX);
+    settings.setValue("satellite/rect_y", ct.rectY);
+    settings.setValue("satellite/rect_r", ct.rectR);
+    settings.sync();
+    qDebug() << "Settings written";
     ct.shouldStop = true;
     thread1.quit();
     thread1.wait();

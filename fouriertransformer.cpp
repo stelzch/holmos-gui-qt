@@ -55,6 +55,11 @@ void FourierTransformer::executeFFT(MComplexImage &img, MComplexImage &img2, boo
 
     fftw_plan &plan = FourierTransformer::fft_plans.at(m_plan_id);
 
+    if(plan == 0) {
+        qDebug() << "No such plan found";
+        return;
+    }
+
     fftw_execute_dft(plan, reinterpret_cast<fftw_complex*>(img.getData()),
                      reinterpret_cast<fftw_complex*>(img2.getData()));
 }

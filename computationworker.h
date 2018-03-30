@@ -13,6 +13,7 @@
 #include <fftw3.h>
 #include <vector>
 #include <algorithm>
+#include <QSettings>
 
 
 class ComputationWorker : public QObject
