@@ -23,10 +23,6 @@ public:
     explicit ComputationWorker(QObject *parent, int n0, int n1);
     void doWork();
     bool shouldStop;
-    template<typename T> void fftshift(T* buffer);
-    template<typename T> void normalize(T* buffer, int number);
-    template<typename T> QImage bufferToQImage(T* buffer, unsigned int n0, unsigned int n1);
-    std::vector<double> getMagnitudeSpectrum(std::complex<double> *buf, unsigned int n0, unsigned int n1);
     int rectX, rectY, rectR;
     bool shouldUnwrapPhase;
 

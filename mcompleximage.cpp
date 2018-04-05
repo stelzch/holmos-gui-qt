@@ -316,6 +316,78 @@ MComplexImage MComplexImage::operator/=(const double b) {
     return *this;
 }
 
+MComplexImage MComplexImage::operator+=(const MGrayImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) + b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator-=(const MGrayImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) - b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator*=(const MGrayImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) * b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator/=(const MGrayImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] = getAt(i) / b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator+=(const MComplexImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] += b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator-=(const MComplexImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] -= b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator*=(const MComplexImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] *= b.getAt(i);
+
+    return *this;
+}
+
+MComplexImage MComplexImage::operator/=(const MComplexImage &b) {
+    assert(b.getWidth() == getWidth());
+    assert(b.getHeight() == getHeight());
+    for(unsigned int i=0; i<getWidth()*getHeight(); i++)
+        getData()[i] /= b.getAt(i);
+
+    return *this;
+}
+
 MComplexImage MComplexImage::operator=(const MComplexImage &b) {
     return MComplexImage(b);
 }

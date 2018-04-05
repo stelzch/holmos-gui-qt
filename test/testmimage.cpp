@@ -181,6 +181,33 @@ private slots:
             QVERIFY(temp8.getAt(i) == std::complex<double>(.5, .5));
     }
 
+    void testComplexOperators2() {
+        MComplexImage cimg2(200, 200);
+        cimg2.initValue(std::complex<double>(1.0, 1.0));
+
+        MComplexImage cimg3(200, 200);
+        cimg3.initValue(std::complex<double>(2.0, 1.0));
+
+        cimg2 += cimg3;
+        for(unsigned int i=0; i<cimg2.getWidth()*cimg2.getHeight(); i++)
+            QVERIFY(cimg2.getAt(i) == std::complex<double>(3.0, 2.0));
+
+        cimg2.initValue(std::complex<double>(1.0, 1.0));
+        cimg2 -= cimg3;
+        for(unsigned int i=0; i<cimg2.getWidth()*cimg2.getHeight(); i++)
+            QVERIFY(cimg2.getAt(i) == std::complex<double>(-1.0, 0.0));
+
+        cimg2.initValue(std::complex<double>(1.0, 1.0));
+        cimg2 *= cimg3;
+        for(unsigned int i=0; i<cimg2.getWidth()*cimg2.getHeight(); i++)
+            QVERIFY(cimg2.getAt(i) == std::complex<double>(1.0, 1.0) * std::complex<double>(2.0, 1.0));
+
+        cimg2.initValue(std::complex<double>(1.0, 1.0));
+        cimg2 /= cimg3;
+        for(unsigned int i=0; i<cimg2.getWidth()*cimg2.getHeight(); i++)
+            QVERIFY(cimg2.getAt(i) == std::complex<double>(1.0, 1.0) / std::complex<double>(2.0, 1.0));
+    }
+
     void testComplexMagspec() {
         cimg1->initValue(std::complex<double>(2.0, 0.0));
 
@@ -221,6 +248,7 @@ private slots:
         QVERIFY(mimg.getMax() == 1.0);
         QVERIFY(mimg.getMin() == 0.0);
     }
+
 
     void benchmarkFFT() {
         auto cimg3 = MComplexImage(1024, 1024);

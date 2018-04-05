@@ -49,6 +49,16 @@ public:
     MComplexImage operator*=(const double b);
     MComplexImage operator/=(const double b);
 
+    MComplexImage operator+=(const MGrayImage &b);
+    MComplexImage operator-=(const MGrayImage &b);
+    MComplexImage operator*=(const MGrayImage &b);
+    MComplexImage operator/=(const MGrayImage &b);
+
+    MComplexImage operator+=(const MComplexImage &b);
+    MComplexImage operator-=(const MComplexImage &b);
+    MComplexImage operator*=(const MComplexImage &b);
+    MComplexImage operator/=(const MComplexImage &b);
+
     MComplexImage operator=(const MComplexImage &b);
 
     MGrayImage getMagnitudeSpectrum() const;
