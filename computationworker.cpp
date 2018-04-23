@@ -44,12 +44,53 @@ QImage ComputationWorker::asQImage(Mat img) {
 
     return image;
 }
+void ComputationWorker::multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    //assert(input.type() == factor.type() == out.type() == CV_32FC2);
+
+    out.forEach<float>([input, factor](float &p, const int pos[]) -> void {
+        float x = input.ptr<float>()[2*(pos[0]*input.cols+pos[1])];
+        float y = input.ptr<float>()[2*(pos[0]*input.cols+pos[1])+1];
+        float u = factor.ptr<float>()[2*(pos[0]*factor.cols+pos[1])];
+        float v = factor.ptr<float>()[2*(pos[0]*factor.cols+pos[1])+1];
+        if(pos[1] % 2 == 0) {
+            p = x*u - y*v;
+        } else {
+            p = x*v+y*u;
+        }
+    });
+}
 
 void ComputationWorker::doWork() {
     Mat image = imread("holmos_raw.png", 0);
     assert(image.type() == CV_8UC1);
     assert(image.rows == n0);
     assert(image.cols == n1);
+
+    /* Create r2s array */
+    Mat r2s_real(n0*2, n1*2, CV_32FC1);
+    std::vector<double> x2;
+    std::vector<double> y2;
+    for(int x=-n1; x<n1; x++)
+        x2.push_back(pow(x, 2));
+    for(int y=-n0; y<n0; y++)
+        y2.push_back(pow(y, 2));
+
+    std::rotate(x2.begin(), x2.begin()+n1, x2.end());
+    std::rotate(y2.begin(), y2.begin()+n0, y2.end());
+
+    assert(x2.size() == 2*n1);
+    assert(y2.size() == 2*n0);
+    for(int y=0; y<n0*2; y++) {
+        for(int x=0; x<n1*2; x++) {
+            r2s_real.ptr<float>()[y*n1+x] = x2.at(x) + y2.at(y) + 1e-10;
+            if(x2.at(x) + y2.at(y) +1e-10 < 1e-10) {
+                qDebug() << "ohoh: " << x << y << x2.at(x) + y2.at(y);
+            }
+        }
+    }
+    Mat r2splanes[] = {r2s_real, Mat::zeros(n0*2, n1*2, CV_32FC1)};
+    Mat r2s;
+    merge(r2splanes, 2, r2s);
 
     while(shouldStop == false) {
         Mat img(n0, n1, CV_32FC1);        
@@ -58,7 +99,7 @@ void ComputationWorker::doWork() {
         img.forEach<float>([&image](float &p, const int position[]) -> void {
                 p = (float) image.at<unsigned char>(position[0], position[1]) / 255.0;
         });
-        emit cameraImageReady(asQImage(img));
+        //emit cameraImageReady(asQImage(img));
         qDebug() << img.at<float>(0) << img.at<float>(1023) << img.at<float>(n1);
 
         Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
@@ -75,7 +116,7 @@ void ComputationWorker::doWork() {
         log(magnitudeSpectrum, magnitudeSpectrum);
         normalize(magnitudeSpectrum, magnitudeSpectrum, 0, 1, CV_MINMAX);
 
-        emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
+        //emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
 
         Rect cropRect(rectX-rectR, rectY-rectR, rectR*2, rectR*2);
         Rect destRect(n1/2-rectR, n0/2-rectR, rectR*2, rectR*2);
@@ -99,9 +140,75 @@ void ComputationWorker::doWork() {
                 p = float(atan2(im, re));
         });
         qDebug() << phaseAngle.at<float>(103) << phaseAngle.at<float>(1024);
-        normalize(phaseAngle, phaseAngle, 0, 1.0, NORM_MINMAX);
+        Mat phaseAngleNorm(n0, n1, CV_32FC1);
+        phaseAngle.copyTo(phaseAngleNorm);
+        normalize(phaseAngle, phaseAngleNorm, 0, 1.0, NORM_MINMAX);
 
-        emit phaseAngleReady(asQImage(phaseAngle));
+        //emit phaseAngleReady(asQImage(phaseAngleNorm));
+
+        Mat mirror = Mat::zeros(n0*2, n1*2, CV_32FC2);
+        for(unsigned int y=0; y<n0; y++) {
+            for(unsigned int x=0; x<n1; x++) {
+                float val = phaseAngle.at<float>(y, x);
+
+                mirror.ptr<float>()[2*(y*2*n1+x)] = val;
+                mirror.ptr<float>()[2*(y*2*n1+(2*n1-x))] = val;
+                mirror.ptr<float>()[2*((2*n0-y)*2*n1+x)] = val;
+                mirror.ptr<float>()[2*((2*n0-y)*2*n1+(2*n1-x))] = val;
+            }
+        }
+        Mat holo_sin_real(n0*2, n1*2, CV_32FC1);
+        Mat holo_cos_real(n0*2, n1*2, CV_32FC1);
+        holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
+                p = sin(mirror.ptr<float>()[2*(pos[0]*mirror.cols+pos[1])]);
+        });
+        holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
+                p = cos(mirror.ptr<float>()[2*(pos[0]*mirror.cols+pos[1])]);
+        });
+        Mat sinplanes[] = {holo_sin_real, Mat::zeros(2*n0, 2*n1, CV_32FC1)};
+        Mat cosplanes[] = {holo_cos_real, Mat::zeros(2*n0, 2*n1, CV_32FC1)};
+
+        Mat holo_sin, holo_cos;
+        merge(sinplanes, 2, holo_sin);
+        merge(cosplanes, 2, holo_cos);
+
+        Mat buffer1(2*n0, 2*n1, CV_32FC2);
+
+        dft(holo_sin, holo_sin);
+        qDebug() << holo_sin.type() << r2s.type() << CV_32FC2;
+        multiplyComplex(holo_sin, r2s, holo_sin);
+        //holo_sin *= r2s;
+        dft(holo_sin, holo_sin, DFT_INVERSE);
+        holo_sin *= holo_cos;
+
+        dft(holo_cos, holo_cos);
+        holo_cos *= r2s;
+        dft(holo_cos, holo_cos, DFT_INVERSE);
+        holo_cos *= holo_sin;
+
+        buffer1 = holo_sin - holo_cos;
+        dft(buffer1, buffer1);
+        //buffer1 /= r2s;
+        dft(buffer1, buffer1, DFT_INVERSE);
+
+        Mat phi_prime(n0, n1, CV_32FC1);
+        phi_prime.forEach<float>([&buffer1](float &p, const int pos[]) -> void {
+                p = buffer1.ptr<float>()[2*(pos[0]*buffer1.cols+pos[1])];
+        }); 
+
+        Mat unwrapped_phase(n0, n1, CV_32FC1);
+        unwrapped_phase.forEach<float>([&phi_prime, &phaseAngle](float &p, const int pos[]) -> void {
+                float phase = phaseAngle.at<float>(pos[0], pos[1]);
+                float phi = phi_prime.at<float>(pos[0], pos[1]);
+
+                p = (phase + 2*M_PI*round((phi-phase) / 2 / M_PI));
+        });
+        qDebug() << "Calc ready";
+        imshow("phase", unwrapped_phase);
+
+        waitKey();
+
+
     }
 
     /*cv::Mat image = cv::imread("holmos_raw.png", 0);

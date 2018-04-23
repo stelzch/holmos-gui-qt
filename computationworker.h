@@ -24,6 +24,7 @@ public:
     explicit ComputationWorker(QObject *parent, int n0, int n1);
     void doWork();
     void fftshift(cv::Mat);
+    void multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
     QImage asQImage(cv::Mat);
     bool shouldStop;
     int rectX, rectY, rectR;
