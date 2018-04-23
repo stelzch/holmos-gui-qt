@@ -5,6 +5,7 @@
 #include <fftw3.h>
 #include <unordered_map>
 #include <cassert>
+#include <omp.h>
 #include "mcompleximage.h"
 
 
@@ -34,7 +35,7 @@ class FourierTransformer
 {
 public:
     explicit FourierTransformer() : fft_plans() {
-
+        fftw_plan_with_nthreads(omp_get_max_threads());
     }
     ~FourierTransformer() {
         for(auto it : fft_plans) {

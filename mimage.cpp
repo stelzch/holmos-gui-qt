@@ -17,6 +17,7 @@ MGrayImage MGrayImage::loadFromFile(const char *filename) {
     cv::Mat cvimg = cv::imread(filename, cv::IMREAD_GRAYSCALE);
     MGrayImage img(cvimg.rows, cvimg.cols);
 
+
     for(unsigned int i=0; i<cvimg.rows*cvimg.cols; i++) {
         img.getData()[i] = static_cast<double>(cvimg.data[i]);
     }
@@ -40,24 +41,28 @@ unsigned int MGrayImage::getHeight() const {
 
 double MGrayImage::getMax() const {
     double val=0.0;
+
     for(unsigned int i=0; i<n0*n1; i++)
-        if(val<getAt(i)) val = getAt(i);
+        if(val<data.at(i)) val = data.at(i);
     return val;
 }
 
 double MGrayImage::getMin() const {
     double val=0.0;
+
     for(unsigned int i=0; i<n0*n1; i++)
-        if(val>getAt(i)) val = getAt(i);
+        if(val>data.at(i)) val = data.at(i);
     return val;
 }
 
 void MGrayImage::sineInplace() {
+
     for(unsigned int i=0; i<n0*n1; i++)
-        data.data()[i] = sin(getAt(i));
+        data.data()[i] = sin(data.at(i));
 }
 
 void MGrayImage::cosineInplace() {
+
     for(unsigned int i=0; i<n0*n1; i++)
         data.data()[i] = cos(data[i]);
 }
@@ -80,6 +85,7 @@ void MGrayImage::zeros() {
     initValue(0.0);
 }
 void MGrayImage::initValue(double x) {
+
     for(unsigned int i=0; i<getWidth() * getHeight(); i++)
         getData()[i] = x;
 }
@@ -91,12 +97,13 @@ void MGrayImage::normalize() {
         if(it > maxval) maxval = it;
         if(it < minval) minval = it;
     }
-    //qDebug() << "Max: " << maxval << " Min: " << minval;
+
+
     for(unsigned int i=0; i<getWidth()*getHeight(); i++) {
         if(minval < 0.0) {
-            getData()[i] = (getAt(i)+abs(minval)) / (maxval+abs(minval));
+            data.data() [i] = (data.at(i)+abs(minval)) / (maxval+abs(minval));
         } else {
-            getData()[i] = (getAt(i)-minval) / (maxval-minval);
+            data.data()[i] = (data.at(i)-minval) / (maxval-minval);
         }
     }
 }
@@ -108,6 +115,7 @@ MGrayImage MGrayImage::operator+(const MGrayImage &b) const {
     unsigned int new_height = min(getHeight(), b.getHeight());
 
     MGrayImage sum(new_height, new_width);
+
 
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
@@ -124,6 +132,7 @@ MGrayImage MGrayImage::operator-(const MGrayImage &b) const {
 
     MGrayImage diff(new_height, new_width);
 
+
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             diff.getData()[y*new_width+x] = getAt(y*getWidth()+x) -
@@ -139,6 +148,7 @@ MGrayImage MGrayImage::operator*(const MGrayImage &b) const {
 
     MGrayImage mul(new_height, new_width);
 
+
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             mul.getData()[y*new_width+x] = getAt(y*getWidth()+x) *
@@ -153,6 +163,7 @@ MGrayImage MGrayImage::operator/(const MGrayImage &b) const {
     unsigned int new_height = min(getHeight(), b.getHeight());
 
     MGrayImage div(new_height, new_width);
+
 
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
@@ -172,6 +183,7 @@ MGrayImage MGrayImage::operator=(const MGrayImage &b) {
 MGrayImage MGrayImage::operator+(const double b) const {
     MGrayImage img(*this);
 
+
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) + b;
 
@@ -180,6 +192,7 @@ MGrayImage MGrayImage::operator+(const double b) const {
 
 MGrayImage MGrayImage::operator-(const double b) const {
     MGrayImage img(*this);
+
 
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) - b;
@@ -190,6 +203,7 @@ MGrayImage MGrayImage::operator-(const double b) const {
 MGrayImage MGrayImage::operator*(const double b) const {
     MGrayImage img(*this);
 
+
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) * b;
 
@@ -199,6 +213,7 @@ MGrayImage MGrayImage::operator*(const double b) const {
 MGrayImage MGrayImage::operator/(const double b) const {
     MGrayImage img(*this);
 
+
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) / b;
 
@@ -206,24 +221,28 @@ MGrayImage MGrayImage::operator/(const double b) const {
 }
 
 MGrayImage MGrayImage::operator+=(const double b) {
+
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) + b;
 
     return *this;
 }
 MGrayImage MGrayImage::operator-=(const double b) {
+
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) - b;
 
     return *this;
 }
 MGrayImage MGrayImage::operator*=(const double b) {
+
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) * b;
 
     return *this;
 }
 MGrayImage MGrayImage::operator/=(const double b) {
+
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) / b;
 
@@ -233,6 +252,7 @@ MGrayImage MGrayImage::operator/=(const double b) {
 
 QImage MGrayImage::asQImage() const {
     QImage img(n1, n0, QImage::Format_Grayscale8);
+
 
     for(unsigned int i=0; i<n0*n1; i++)
         img.bits()[i] = (getAt(i));

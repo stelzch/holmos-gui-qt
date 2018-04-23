@@ -21,6 +21,7 @@ MComplexImage::MComplexImage(const MGrayImage &src) : QObject() {
     n1 = src.getWidth();
     data.reserve(n0 * n1);
 
+ 
     for(unsigned int i=0; i<n0*n1; i++) {
         data.at(i).real(src.getAt(i));
         data.at(i).imag(0.0);
@@ -31,6 +32,7 @@ MComplexImage MComplexImage::fromGrayImage(MGrayImage& img) {
     MComplexImage cimg(img.getHeight(), img.getWidth());
     cimg.initValue(std::complex<double>(0.0, 0.0));
 
+     
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         cimg.getData()[i].real(img.getAt(i));
 
@@ -42,6 +44,7 @@ void MComplexImage::loadGrayImage(MGrayImage img) {
     assert(img.getHeight() == getHeight());
     initValue(std::complex<double>(0.0, 0.0));
 
+ 
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = img.getAt(i);
 }
@@ -67,12 +70,14 @@ unsigned int MComplexImage::getHeight() const {
 }
 
 void MComplexImage::initValue(std::complex<double> val) {
+     
     for(unsigned int i=0; i<getWidth() * getHeight(); i++)
         data.at(i) = val;
 }
 
 void MComplexImage::normalize() {
     double minval=0.0, maxval=1.0;
+
 
     for(auto it : data) {
         if(it.real() > maxval) maxval = it.real();
@@ -97,6 +102,7 @@ void MComplexImage::fftshift() {
     auto buffer = getData();
 
     /* Swap upper-left with bottom-right */
+     
     for(int y=0; y<yhalf; y++) {
         for(int x=0; x<xhalf; x++) {
             std::complex<double> tmp;
@@ -109,6 +115,7 @@ void MComplexImage::fftshift() {
     }
 
     /* Swap bottom-left with upper-right */
+     
     for(int y=yhalf; y<n0; y++) {
         for(int x=0; x<xhalf; x++) {
             std::complex<double> tmp;
@@ -127,6 +134,7 @@ MComplexImage MComplexImage::operator+(const MGrayImage &b) const {
 
     MComplexImage sum(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             sum.getData()[y*new_width+x].real(getAt(y*getWidth()+x).real() +
@@ -144,6 +152,7 @@ MComplexImage MComplexImage::operator-(const MGrayImage &b) const {
 
     MComplexImage diff(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             diff.getData()[y*new_width+x].real(getAt(y*getWidth()+x).real() -
@@ -161,6 +170,7 @@ MComplexImage MComplexImage::operator*(const MGrayImage &b) const  {
 
     MComplexImage mul(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             mul.getData()[y*new_width+x].real(getAt(y*getWidth()+x).real() *
@@ -179,6 +189,7 @@ MComplexImage MComplexImage::operator/(const MGrayImage &b) const {
 
     MComplexImage div(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             div.getData()[y*new_width+x].real(getAt(y*getWidth()+x).real() /
@@ -197,6 +208,7 @@ MComplexImage MComplexImage::operator+(const MComplexImage &b) const {
 
     MComplexImage sum(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             sum.getData()[y*new_width+x] = getAt(x, y) + b.getAt(x, y);
@@ -212,6 +224,7 @@ MComplexImage MComplexImage::operator-(const MComplexImage &b) const {
 
     MComplexImage diff(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             diff.getData()[y*new_width+x] = getAt(x, y) - b.getAt(x, y);
@@ -227,6 +240,7 @@ MComplexImage MComplexImage::operator*(const MComplexImage &b) const {
 
     MComplexImage mul(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             mul.getData()[y*new_width+x] = getAt(x, y) * b.getAt(x, y);
@@ -242,6 +256,7 @@ MComplexImage MComplexImage::operator/(const MComplexImage &b) const {
 
     MComplexImage div(new_height, new_width);
 
+     
     for(unsigned int y=0; y<new_height; y++) {
         for(unsigned int x=0; x<new_width; x++) {
             div.getData()[y*new_width+x] = getAt(x, y) / b.getAt(x, y);
@@ -254,6 +269,7 @@ MComplexImage MComplexImage::operator/(const MComplexImage &b) const {
 MComplexImage MComplexImage::operator+(const double b) const {
     MComplexImage img(*this);
 
+     
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) + b;
 
@@ -263,6 +279,7 @@ MComplexImage MComplexImage::operator+(const double b) const {
 MComplexImage MComplexImage::operator-(const double b) const {
     MComplexImage img(*this);
 
+     
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) - b;
 
@@ -272,6 +289,7 @@ MComplexImage MComplexImage::operator-(const double b) const {
 MComplexImage MComplexImage::operator*(const double b) const {
     MComplexImage img(*this);
 
+     
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) * b;
 
@@ -281,6 +299,7 @@ MComplexImage MComplexImage::operator*(const double b) const {
 MComplexImage MComplexImage::operator/(const double b) const {
     MComplexImage img(*this);
 
+     
     for(unsigned int i=0; i<img.getWidth()*img.getHeight(); i++)
         img.getData()[i] = getAt(i) / b;
 
@@ -289,6 +308,7 @@ MComplexImage MComplexImage::operator/(const double b) const {
 
 
 MComplexImage MComplexImage::operator+=(const double b) {
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) + b;
 
@@ -296,6 +316,7 @@ MComplexImage MComplexImage::operator+=(const double b) {
 }
 
 MComplexImage MComplexImage::operator-=(const double b) {
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) - b;
 
@@ -303,6 +324,7 @@ MComplexImage MComplexImage::operator-=(const double b) {
 }
 
 MComplexImage MComplexImage::operator*=(const double b) {
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) * b;
 
@@ -310,6 +332,7 @@ MComplexImage MComplexImage::operator*=(const double b) {
 }
 
 MComplexImage MComplexImage::operator/=(const double b) {
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) / b;
 
@@ -337,6 +360,7 @@ MComplexImage MComplexImage::operator-=(const MGrayImage &b) {
 MComplexImage MComplexImage::operator*=(const MGrayImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) * b.getAt(i);
 
@@ -346,6 +370,7 @@ MComplexImage MComplexImage::operator*=(const MGrayImage &b) {
 MComplexImage MComplexImage::operator/=(const MGrayImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] = getAt(i) / b.getAt(i);
 
@@ -355,6 +380,7 @@ MComplexImage MComplexImage::operator/=(const MGrayImage &b) {
 MComplexImage MComplexImage::operator+=(const MComplexImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] += b.getAt(i);
 
@@ -364,6 +390,7 @@ MComplexImage MComplexImage::operator+=(const MComplexImage &b) {
 MComplexImage MComplexImage::operator-=(const MComplexImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] -= b.getAt(i);
 
@@ -373,6 +400,7 @@ MComplexImage MComplexImage::operator-=(const MComplexImage &b) {
 MComplexImage MComplexImage::operator*=(const MComplexImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] *= b.getAt(i);
 
@@ -382,6 +410,7 @@ MComplexImage MComplexImage::operator*=(const MComplexImage &b) {
 MComplexImage MComplexImage::operator/=(const MComplexImage &b) {
     assert(b.getWidth() == getWidth());
     assert(b.getHeight() == getHeight());
+     
     for(unsigned int i=0; i<getWidth()*getHeight(); i++)
         getData()[i] /= b.getAt(i);
 
@@ -395,6 +424,7 @@ MComplexImage MComplexImage::operator=(const MComplexImage &b) {
 MGrayImage MComplexImage::getMagnitudeSpectrum() const {
     MGrayImage magspec(n0, n1);
 
+     
     for(unsigned int i=0; i<n0*n1; i++) {
         magspec.getData()[i] = abs(getAt(i));
         //magspec.getData()[i] = pow(getAt(i).real(), 2) + pow(getAt(i).imag(), 2);
@@ -406,6 +436,7 @@ MGrayImage MComplexImage::getMagnitudeSpectrum() const {
 MGrayImage MComplexImage::getAngle() const {
     MGrayImage angle(n0, n1);
 
+     
     for(unsigned int i=0; i<n0*n1; i++) {
         angle.getData()[i] = arg(getAt(i));
     }
@@ -416,6 +447,7 @@ MGrayImage MComplexImage::getAngle() const {
 MGrayImage MComplexImage::getReal() {
     MGrayImage real(n0, n1);
 
+     
     for(unsigned int i=0; i<n0*n1; i++)
         real.getData()[i] = getAt(i).real();
 
@@ -428,6 +460,7 @@ MComplexImage MComplexImage::getSector(unsigned int x, unsigned int y, unsigned 
 
     MComplexImage sector(size, size);
 
+     
     for(unsigned int my=y; my<y+size; my++) {
         for(unsigned int mx=x; mx<x+size; mx++) {
             /* Sector coordinates */
@@ -445,6 +478,7 @@ void MComplexImage::setSector(unsigned int x, unsigned int y, MComplexImage &sec
     assert(y+sector.getHeight() <= n0);
     assert(x+sector.getWidth() <= n1);
 
+     
     for(unsigned int my=y; my<y+sector.getHeight(); my++) {
         for(unsigned int mx=x; mx<x+sector.getWidth(); mx++) {
             /* Sector coordinates */
@@ -458,6 +492,8 @@ void MComplexImage::setSector(unsigned int x, unsigned int y, MComplexImage &sec
 
 void MComplexImage::fftInplace() {
     fftw_complex *buf = fftw_alloc_complex(n0*n1);
+
+     
     for(unsigned int i=0; i<n0*n1; i++) {
         buf[i][0] = getAt(i).real();
         buf[i][1] = getAt(i).imag();
@@ -470,6 +506,7 @@ void MComplexImage::fftInplace() {
     fftw_execute(p1);
     fftw_destroy_plan(p1);
 
+     
     for(unsigned int i=0; i<n0*n1; i++)
         getData()[i] = std::complex<double>(buf[i][0], buf[i][1]);
 

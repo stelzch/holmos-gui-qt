@@ -14,6 +14,7 @@
 #include <vector>
 #include <algorithm>
 #include <QSettings>
+#include "fpscounter.h"
 
 
 class ComputationWorker : public QObject
@@ -22,6 +23,8 @@ class ComputationWorker : public QObject
 public:
     explicit ComputationWorker(QObject *parent, int n0, int n1);
     void doWork();
+    void fftshift(cv::Mat);
+    QImage asQImage(cv::Mat);
     bool shouldStop;
     int rectX, rectY, rectR;
     bool shouldUnwrapPhase;
@@ -34,6 +37,7 @@ signals:
 public slots:
 private:
     const int n0, n1;
+    FPSCounter fps;
 
 
 };

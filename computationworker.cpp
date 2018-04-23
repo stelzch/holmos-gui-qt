@@ -2,6 +2,11 @@
 #include "mimage.h"
 #include "mcompleximage.h"
 #include "fouriertransformer.h"
+#include <opencv2/opencv.hpp>
+#include <cassert>
+
+using namespace cv;
+using namespace std;
 
 ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false),
     rectX(0), rectY(0), rectR(0)
@@ -9,13 +14,102 @@ ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(
 
 }
 
-void ComputationWorker::doWork() {
+void ComputationWorker::fftshift(Mat img) {
+        int hx = img.cols / 2;
+        int hy = img.rows / 2;
+        Mat q1(img, Rect(hx, 0, hx, hy));
+        Mat q2(img, Rect(0, 0, hx, hy));
+        Mat q3(img, Rect(0, hy, hx, hy));
+        Mat q4(img, Rect(hx, hy, hx, hy));
+        Mat tmp;
 
-    cv::Mat image = cv::imread("holmos_raw.png", 0);
+        q1.copyTo(tmp);
+        q3.copyTo(q1);
+        tmp.copyTo(q3);
+
+        q2.copyTo(tmp);
+        q4.copyTo(q2);
+        tmp.copyTo(q4);
+
+}
+QImage ComputationWorker::asQImage(Mat img) {
+    assert(img.type() == CV_32FC1);
+    QImage image(img.cols, img.rows, QImage::Format_RGB888);
+
+    img.forEach<float>([&image, &img](float &p, const int position[]) -> void {
+            image.bits()[3*(img.cols * position[0] + position[1])+0] = floor(p*255.0);
+            image.bits()[3*(img.cols * position[0] + position[1])+1] = floor(p*255.0);
+            image.bits()[3*(img.cols * position[0] + position[1])+2] = floor(p*255.0);
+    });
+
+    return image;
+}
+
+void ComputationWorker::doWork() {
+    Mat image = imread("holmos_raw.png", 0);
+    assert(image.type() == CV_8UC1);
     assert(image.rows == n0);
     assert(image.cols == n1);
 
+    while(shouldStop == false) {
+        Mat img(n0, n1, CV_32FC1);        
 
+        /* Load image and convert to floating point */
+        img.forEach<float>([&image](float &p, const int position[]) -> void {
+                p = (float) image.at<unsigned char>(position[0], position[1]) / 255.0;
+        });
+        emit cameraImageReady(asQImage(img));
+        qDebug() << img.at<float>(0) << img.at<float>(1023) << img.at<float>(n1);
+
+        Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
+        Mat fourierTransform(n0, n1, CV_32FC2);
+        merge(planes, 2, fourierTransform);
+        cv::dft(fourierTransform, fourierTransform);
+
+
+        fftshift(fourierTransform);                
+        split(fourierTransform, planes);
+        cv::magnitude(planes[0], planes[1], planes[0]);
+        Mat magnitudeSpectrum = planes[0];
+        magnitudeSpectrum += Scalar::all(1);
+        log(magnitudeSpectrum, magnitudeSpectrum);
+        normalize(magnitudeSpectrum, magnitudeSpectrum, 0, 1, CV_MINMAX);
+
+        emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
+
+        Rect cropRect(rectX-rectR, rectY-rectR, rectR*2, rectR*2);
+        Rect destRect(n1/2-rectR, n0/2-rectR, rectR*2, rectR*2);
+        Mat satellite(fourierTransform, cropRect);
+        Mat cropped = Mat::zeros(n0, n1, CV_32FC2);
+        satellite.copyTo(cropped(destRect));
+        
+        fftshift(cropped);
+        dft(cropped, cropped, DFT_INVERSE);
+        Mat phaseAngle(n0, n1, CV_32FC1);
+        
+        auto val2 = cropped.at<float>(1, 1023, 1023);
+        qDebug() << cropped.cols << cropped.rows;
+        phaseAngle.forEach<float>([cropped](float &p, const int pos[]) -> void {
+                assert(pos[0] < 1024);
+                assert(pos[1] < 1024);
+                //p = (float) cropped.at<float>(0, 1020, 1023);
+                //p = (float) cropped.at<float>(0, pos[0], pos[1]);
+                float re = cropped.ptr<float>()[2*(pos[0]*1024+pos[1])];
+                float im = cropped.ptr<float>()[2*(pos[0]*1024+pos[1])+1];
+                p = float(atan2(im, re));
+        });
+        qDebug() << phaseAngle.at<float>(103) << phaseAngle.at<float>(1024);
+        normalize(phaseAngle, phaseAngle, 0, 1.0, NORM_MINMAX);
+
+        emit phaseAngleReady(asQImage(phaseAngle));
+    }
+
+    /*cv::Mat image = cv::imread("holmos_raw.png", 0);
+    assert(image.rows == n0);
+    assert(image.cols == n1);*/
+
+
+  /*
     MGrayImage img = MGrayImage::loadFromFile("/home/cstelz/mtestimage.png");
     MComplexImage cimg = MComplexImage::fromGrayImage(img);
     MComplexImage cropped(n0, n1);
@@ -25,7 +119,7 @@ void ComputationWorker::doWork() {
     r2s.initValue(1e-9);
     qDebug() << cimg.getWidth() << "x" << cimg.getHeight();
 
-    /* Create r2s array */
+     Create r2s array 
     std::vector<double> x2;
     std::vector<double> y2;
     for(int x=-n1; x<n1; x++)
@@ -68,6 +162,7 @@ void ComputationWorker::doWork() {
     qDebug() << img.getWidth() << "x" << img.getHeight();
     auto i = 0;
     while(!shouldStop) {
+        qDebug() << "FPS: " << fps.frame();
 
         emit cameraImageReady(img.asQImage());
         MComplexImage cimg2 = MComplexImage::fromGrayImage(img);
@@ -175,5 +270,6 @@ void ComputationWorker::doWork() {
         }
         qDebug() << "Frame ready: " << i++;
     }
+        */
 
 }
