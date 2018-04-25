@@ -22,19 +22,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     mainwindow.cpp \
     computationworker.cpp \
-    mimage.cpp \
-    mcompleximage.cpp \
-    fouriertransformer.cpp \
     imageselect.cpp \
     scaledimageview.cpp \
     fpscounter.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
-    camera/camera.h \
-    mimage.h \
-    mcompleximage.h \
-    fouriertransformer.h \
     imageselect.h \
     scaledimageview.h \
     fpscounter.h
@@ -42,7 +35,7 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui
 
 QMAKE_LFLAGS = -fopenmp -lfftw3_threads -lfftw3f -lfftw3f_threads
-QMAKE_CXXFLAGS = -fopenmp -std=c++17
+QMAKE_CXXFLAGS = -fopenmp -std=c++14
 
 !debug {
     QMAKE_LFLAGS += -O3
@@ -72,6 +65,6 @@ test {
 }
 
 unix: CONFIG += link_pkgconfig
-#unix: QMAKE_LFLAGS += -lraspicam
+unix: QMAKE_LFLAGS += -lraspicam_cv
 CONFIG += c++14
 CONFIG += testcase

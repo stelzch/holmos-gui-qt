@@ -4,7 +4,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), ct(nullptr, 1024, 1024),
+    ui(new Ui::MainWindow), ct(nullptr, 1944, 2592),
     settings("FRSEM", "HolMOS GUI")
 {
     ui->setupUi(this);
@@ -34,6 +34,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sliderRectX->setValue(settings.value("satellite/rect_x").value<int>());
     ui->sliderRectY->setValue(settings.value("satellite/rect_y").value<int>());
     ui->sliderRectR->setValue(settings.value("satellite/rect_r").value<int>());
+	ui->sliderRectX->setMaximum(2592);
+	ui->sliderRectY->setMaximum(1944);
     ct.rectX = settings.value("satellite/rect_x").value<int>();
     ct.rectY = settings.value("satellite/rect_y").value<int>();
     ct.rectR = settings.value("satellite/rect_r").value<int>();
