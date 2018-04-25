@@ -8,6 +8,8 @@
 using namespace cv;
 using namespace std;
 
+typedef Point2f ComplexPixel;
+
 ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false),
     rectX(0), rectY(0), rectR(0)
 {
@@ -45,19 +47,59 @@ QImage ComputationWorker::asQImage(Mat img) {
     return image;
 }
 void ComputationWorker::multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
-    //assert(input.type() == factor.type() == out.type() == CV_32FC2);
+    assert(input.type() == CV_32FC2);
+    assert(out.type() == CV_32FC2);
+    assert(factor.type() == CV_32FC2);
 
-    out.forEach<float>([input, factor](float &p, const int pos[]) -> void {
-        float x = input.ptr<float>()[2*(pos[0]*input.cols+pos[1])];
-        float y = input.ptr<float>()[2*(pos[0]*input.cols+pos[1])+1];
-        float u = factor.ptr<float>()[2*(pos[0]*factor.cols+pos[1])];
-        float v = factor.ptr<float>()[2*(pos[0]*factor.cols+pos[1])+1];
-        if(pos[1] % 2 == 0) {
-            p = x*u - y*v;
-        } else {
-            p = x*v+y*u;
-        }
+    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
+        ComplexPixel i = input.at<ComplexPixel>(pos[0], pos[1]);
+        ComplexPixel f = factor.at<ComplexPixel>(pos[0], pos[1]);
+        p.x = i.x*f.x - i.y*f.y;
+        p.y = i.x*f.y + i.x*f.x;
     });
+}
+
+void ComputationWorker::multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    assert(input.type() == CV_32FC2);
+    assert(out.type() == CV_32FC2);
+    assert(factor.type() == CV_32FC1);
+
+    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
+        float fac = factor.at<float>(pos[0], pos[1]);
+        ComplexPixel inp = input.at<ComplexPixel>(pos[0], pos[1]);
+        p.x = inp.x * fac;
+        p.y = inp.y * fac;
+    });    
+}
+
+void ComputationWorker::divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    assert(input.type() == CV_32FC2);
+    assert(out.type() == CV_32FC2);
+    assert(factor.type() == CV_32FC1);
+
+    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
+        float fac = factor.at<float>(pos[0], pos[1]);
+        ComplexPixel inp = input.at<ComplexPixel>(pos[0], pos[1]);
+        p.x = inp.x / fac;
+        p.y = inp.y / fac;
+    });    
+}
+
+void ComputationWorker::divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    assert(input.type() == CV_32FC2);
+    assert(out.type() == CV_32FC2);
+    assert(factor.type() == CV_32FC2);
+
+    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
+        ComplexPixel i = input.at<ComplexPixel>(pos[0], pos[1]);
+        ComplexPixel f = factor.at<ComplexPixel>(pos[0], pos[1]);
+        p.x = (i.x*f.x - i.y) / (f.x*f.x+f.y*f.y);
+        p.y = (-i.x*f.y + i.y*f.y) / (f.x*f.x+f.y*f.y);
+    });
+}
+
+void ComputationWorker::saveMat(QString filename, Mat& img) {
+    
 }
 
 void ComputationWorker::doWork() {
@@ -82,7 +124,7 @@ void ComputationWorker::doWork() {
     assert(y2.size() == 2*n0);
     for(int y=0; y<n0*2; y++) {
         for(int x=0; x<n1*2; x++) {
-            r2s_real.ptr<float>()[y*n1+x] = x2.at(x) + y2.at(y) + 1e-10;
+            r2s_real.at<float>(y, x) = x2.at(x) + y2.at(y) + 1e-10;
             if(x2.at(x) + y2.at(y) +1e-10 < 1e-10) {
                 qDebug() << "ohoh: " << x << y << x2.at(x) + y2.at(y);
             }
@@ -92,123 +134,141 @@ void ComputationWorker::doWork() {
     Mat r2s;
     merge(r2splanes, 2, r2s);
 
+    Mat img(n0, n1, CV_32FC1);        
+    Mat fourierTransform(n0, n1, CV_32FC2);
+    Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
+    Mat magnitudeSpectrum(n0, n1, CV_32FC1);
+    Mat cropped = Mat::zeros(n0, n1, CV_32FC2);
+    Mat phaseAngle(n0, n1, CV_32FC1);
+    Mat phaseAngleNorm(n0, n1, CV_32FC1);
+    Mat mirror = Mat::zeros(n0*2, n1*2, CV_32FC2);
+    Mat holo_sin_real(n0*2, n1*2, CV_32FC1);
+    Mat holo_cos_real(n0*2, n1*2, CV_32FC1);
+    Mat holo_sin(n0*2, n1*2, CV_32FC2), holo_cos(n0*2, n1*2, CV_32FC2);
+    Mat phi_prime(n0, n1, CV_32FC1);
+    Mat unwrapped_phase(n0, n1, CV_32FC1);
+    Mat buffer1(2*n0, 2*n1, CV_32FC2), buffer2(2*n0, 2*n1, CV_32FC2);
+
+    
+    fftwf_plan fft1, fft2;
+    fftwf_complex *fft_buffer = (fftwf_complex *) fftwf_malloc(n0*2*n1*2*sizeof(fftwf_complex));
+    fft1 = fftwf_plan_dft_2d(n0, n1, fft_buffer, fft_buffer, FFTW_FORWARD, FFTW_ESTIMATE);
+    fft2 = fftwf_plan_dft_r2c_2d(n0, n1, img.ptr<float>(),
+        reinterpret_cast<fftwf_complex*>(fourierTransform.ptr<ComplexPixel>()),
+        FFTW_ESTIMATE);
+
     while(shouldStop == false) {
-        Mat img(n0, n1, CV_32FC1);        
 
         /* Load image and convert to floating point */
         img.forEach<float>([&image](float &p, const int position[]) -> void {
                 p = (float) image.at<unsigned char>(position[0], position[1]) / 255.0;
         });
-        //emit cameraImageReady(asQImage(img));
+        emit cameraImageReady(asQImage(img));
         qDebug() << img.at<float>(0) << img.at<float>(1023) << img.at<float>(n1);
 
-        Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
-        Mat fourierTransform(n0, n1, CV_32FC2);
-        merge(planes, 2, fourierTransform);
-        cv::dft(fourierTransform, fourierTransform);
+        dft(img, fourierTransform, DFT_COMPLEX_OUTPUT);
 
 
         fftshift(fourierTransform);                
         split(fourierTransform, planes);
-        cv::magnitude(planes[0], planes[1], planes[0]);
-        Mat magnitudeSpectrum = planes[0];
+        cv::magnitude(planes[0], planes[1], magnitudeSpectrum);
         magnitudeSpectrum += Scalar::all(1);
         log(magnitudeSpectrum, magnitudeSpectrum);
         normalize(magnitudeSpectrum, magnitudeSpectrum, 0, 1, CV_MINMAX);
 
-        //emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
+        emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
 
+        cropped.forEach<ComplexPixel>([](ComplexPixel &p, const int pos[]) -> void {
+            p.x = 0.0;
+            p.y = 0.0;
+        });
         Rect cropRect(rectX-rectR, rectY-rectR, rectR*2, rectR*2);
         Rect destRect(n1/2-rectR, n0/2-rectR, rectR*2, rectR*2);
         Mat satellite(fourierTransform, cropRect);
-        Mat cropped = Mat::zeros(n0, n1, CV_32FC2);
         satellite.copyTo(cropped(destRect));
         
         fftshift(cropped);
         dft(cropped, cropped, DFT_INVERSE);
-        Mat phaseAngle(n0, n1, CV_32FC1);
         
-        auto val2 = cropped.at<float>(1, 1023, 1023);
         qDebug() << cropped.cols << cropped.rows;
-        phaseAngle.forEach<float>([cropped](float &p, const int pos[]) -> void {
+        phaseAngle.forEach<float>([&cropped](float&p, const int pos[]) -> void {
                 assert(pos[0] < 1024);
                 assert(pos[1] < 1024);
                 //p = (float) cropped.at<float>(0, 1020, 1023);
                 //p = (float) cropped.at<float>(0, pos[0], pos[1]);
-                float re = cropped.ptr<float>()[2*(pos[0]*1024+pos[1])];
-                float im = cropped.ptr<float>()[2*(pos[0]*1024+pos[1])+1];
-                p = float(atan2(im, re));
+                ComplexPixel cr = cropped.at<ComplexPixel>(pos[0], pos[1]);
+                p = float(atan2(cr.y, cr.x));
         });
         qDebug() << phaseAngle.at<float>(103) << phaseAngle.at<float>(1024);
-        Mat phaseAngleNorm(n0, n1, CV_32FC1);
-        phaseAngle.copyTo(phaseAngleNorm);
         normalize(phaseAngle, phaseAngleNorm, 0, 1.0, NORM_MINMAX);
 
-        //emit phaseAngleReady(asQImage(phaseAngleNorm));
+        if(!shouldUnwrapPhase) {
+            emit phaseAngleReady(asQImage(phaseAngleNorm));
+        } else {
+            for(int y=0; y<n0; y++) {
+                for(int x=0; x<n1; x++) {
+                    float val = phaseAngle.at<float>(y, x);
 
-        Mat mirror = Mat::zeros(n0*2, n1*2, CV_32FC2);
-        for(unsigned int y=0; y<n0; y++) {
-            for(unsigned int x=0; x<n1; x++) {
-                float val = phaseAngle.at<float>(y, x);
-
-                mirror.ptr<float>()[2*(y*2*n1+x)] = val;
-                mirror.ptr<float>()[2*(y*2*n1+(2*n1-x))] = val;
-                mirror.ptr<float>()[2*((2*n0-y)*2*n1+x)] = val;
-                mirror.ptr<float>()[2*((2*n0-y)*2*n1+(2*n1-x))] = val;
+                    mirror.at<ComplexPixel>(y, x).x = val;
+                    mirror.at<ComplexPixel>(y, 2*n1 - x - 1).x = val;
+                    mirror.at<ComplexPixel>(2*n0 - y - 1, x).x = val;
+                    mirror.at<ComplexPixel>(2*n0 - y - 1, 2*n1 - x - 1).x = val;
+                }
             }
+            holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
+                    p = sin(mirror.at<ComplexPixel>(pos[0], pos[1]).x);
+            });
+            holo_cos_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
+                    p = cos(mirror.at<ComplexPixel>(pos[0], pos[1]).x);
+            });
+            holo_sin.forEach<ComplexPixel>([&mirror](ComplexPixel &p, const int pos[]) -> void {
+                    p.x = sin(mirror.at<ComplexPixel>(pos[0], pos[1]).x);
+                    p.y = 0;
+            });
+            holo_cos.forEach<ComplexPixel>([&mirror, &fft_buffer](ComplexPixel &p, const int pos[]) -> void {
+                    p.x = cos(mirror.at<ComplexPixel>(pos[0], pos[1]).x);
+                    /*fft_buffer[pos[0]*mirror.cols*2+pos[0]][0] = p.x;
+                    fft_buffer[pos[0]*mirror.cols*2+pos[0]][1] = 0.0;*/
+                    p.y = 0;
+            });
+
+            dft(holo_sin_real, holo_sin, DFT_COMPLEX_OUTPUT);
+            multiplyReal(holo_sin, r2s_real, holo_sin);
+            dft(holo_sin, holo_sin, DFT_INVERSE);
+            multiplyReal(holo_sin, holo_cos_real, holo_sin);
+
+
+
+
+            dft(holo_cos_real, holo_cos, DFT_COMPLEX_OUTPUT);
+            multiplyReal(holo_cos, r2s_real, holo_cos);
+            dft(holo_cos, holo_cos, DFT_INVERSE);
+            multiplyReal(holo_cos, holo_sin_real, holo_cos);
+            qDebug() << "Cosine multiplied";
+
+            qDebug() << holo_sin.at<ComplexPixel>(20, 20).x;
+            double min, max;
+            cv::minMaxLoc(holo_sin, &min, &max);
+            qDebug() << "Max: " << max << "Min:" << min;
+            qDebug() << "Final pass";
+            buffer1 = holo_sin - holo_cos;
+            dft(buffer1, buffer1);
+            divideReal(buffer1, r2s_real, buffer1);
+            dft(buffer1, buffer1, DFT_INVERSE);
+
+            phi_prime.forEach<float>([&buffer1](float &p, const int pos[]) -> void {
+                    p = buffer1.at<ComplexPixel>(pos[0], pos[1]).x;
+            }); 
+
+            unwrapped_phase.forEach<float>([&phi_prime, &phaseAngle](float &p, const int pos[]) -> void {
+                    float phase = phaseAngle.at<float>(pos[0], pos[1]);
+                    float phi = phi_prime.at<float>(pos[0], pos[1]);
+
+                    p = (phase + 2*M_PI*round((phi-phase) / 2 / M_PI));
+            });
+            normalize(unwrapped_phase, unwrapped_phase, 0, 1, CV_MINMAX);
+            emit phaseAngleReady(asQImage(unwrapped_phase));
         }
-        Mat holo_sin_real(n0*2, n1*2, CV_32FC1);
-        Mat holo_cos_real(n0*2, n1*2, CV_32FC1);
-        holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
-                p = sin(mirror.ptr<float>()[2*(pos[0]*mirror.cols+pos[1])]);
-        });
-        holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
-                p = cos(mirror.ptr<float>()[2*(pos[0]*mirror.cols+pos[1])]);
-        });
-        Mat sinplanes[] = {holo_sin_real, Mat::zeros(2*n0, 2*n1, CV_32FC1)};
-        Mat cosplanes[] = {holo_cos_real, Mat::zeros(2*n0, 2*n1, CV_32FC1)};
-
-        Mat holo_sin, holo_cos;
-        merge(sinplanes, 2, holo_sin);
-        merge(cosplanes, 2, holo_cos);
-
-        Mat buffer1(2*n0, 2*n1, CV_32FC2);
-
-        dft(holo_sin, holo_sin);
-        qDebug() << holo_sin.type() << r2s.type() << CV_32FC2;
-        multiplyComplex(holo_sin, r2s, holo_sin);
-        //holo_sin *= r2s;
-        dft(holo_sin, holo_sin, DFT_INVERSE);
-        holo_sin *= holo_cos;
-
-        dft(holo_cos, holo_cos);
-        holo_cos *= r2s;
-        dft(holo_cos, holo_cos, DFT_INVERSE);
-        holo_cos *= holo_sin;
-
-        buffer1 = holo_sin - holo_cos;
-        dft(buffer1, buffer1);
-        //buffer1 /= r2s;
-        dft(buffer1, buffer1, DFT_INVERSE);
-
-        Mat phi_prime(n0, n1, CV_32FC1);
-        phi_prime.forEach<float>([&buffer1](float &p, const int pos[]) -> void {
-                p = buffer1.ptr<float>()[2*(pos[0]*buffer1.cols+pos[1])];
-        }); 
-
-        Mat unwrapped_phase(n0, n1, CV_32FC1);
-        unwrapped_phase.forEach<float>([&phi_prime, &phaseAngle](float &p, const int pos[]) -> void {
-                float phase = phaseAngle.at<float>(pos[0], pos[1]);
-                float phi = phi_prime.at<float>(pos[0], pos[1]);
-
-                p = (phase + 2*M_PI*round((phi-phase) / 2 / M_PI));
-        });
-        qDebug() << "Calc ready";
-        imshow("phase", unwrapped_phase);
-
-        waitKey();
-
-
     }
 
     /*cv::Mat image = cv::imread("holmos_raw.png", 0);

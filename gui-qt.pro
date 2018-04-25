@@ -41,7 +41,7 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-QMAKE_LFLAGS = -fopenmp -lfftw3_threads
+QMAKE_LFLAGS = -fopenmp -lfftw3_threads -lfftw3f -lfftw3f_threads
 QMAKE_CXXFLAGS = -fopenmp -std=c++17
 
 !debug {

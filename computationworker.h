@@ -25,6 +25,11 @@ public:
     void doWork();
     void fftshift(cv::Mat);
     void multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    void multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    void divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    void divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    void saveMat(QString filename, cv::Mat& mat);
+
     QImage asQImage(cv::Mat);
     bool shouldStop;
     int rectX, rectY, rectR;
