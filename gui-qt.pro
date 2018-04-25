@@ -42,6 +42,22 @@ QMAKE_CXXFLAGS = -fopenmp -std=c++14
     QMAKE_CXXFLAGS += -O3
 }
 
+!rpi {
+    DEFINES += DEBUG_PHONY_CAMERA
+} else {
+    QMAKE_LFLAGS += -lraspicam_cv
+}
+
+rpicam_v2 {
+    DEFINES += CAMERA_WIDTH=3280
+    DEFINES += CAMERA_HEIGHT=2464
+} else {
+    DEFINES += CAMERA_WIDTH=2592
+    DEFINES += CAMERA_HEIGHT=1944
+}
+    
+
+
 PKGCONFIG += fftw3
 
 packagesExist(opencv) {
@@ -65,6 +81,5 @@ test {
 }
 
 unix: CONFIG += link_pkgconfig
-unix: QMAKE_LFLAGS += -lraspicam_cv
 CONFIG += c++14
 CONFIG += testcase

@@ -1,7 +1,10 @@
 #include "computationworker.h"
-#include <raspicam/raspicam_cv.h>
 #include <opencv2/opencv.hpp>
 #include <cassert>
+
+#ifndef DEBUG_PHONY_CAMERA
+#include <raspicam/raspicam_cv.h>
+#endif
 
 using namespace cv;
 using namespace std;
