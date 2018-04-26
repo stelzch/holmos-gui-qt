@@ -43,9 +43,9 @@ SettingsDialog::~SettingsDialog()
     qDebug() << "Saving settings...";
     settings.setValue("capture/cropResX", ui->cropResolutionX->value());
     settings.setValue("capture/cropResY", ui->cropResolutionY->value());
-    settings.setValue("satellite/rect_x", 0);
-    settings.setValue("satellite/rect_y", 0);
-    settings.setValue("satellite/rect_r", 0);
+    settings.setValue("satellite/rect_x", 10);
+    settings.setValue("satellite/rect_y", 10);
+    settings.setValue("satellite/rect_r", 5);
     settings.sync();
     delete ui;
 }
