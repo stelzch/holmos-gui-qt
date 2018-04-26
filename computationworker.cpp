@@ -11,10 +11,12 @@ using namespace std;
 
 typedef Point2f ComplexPixel;
 
-ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false),
-    rectX(0), rectY(0), rectR(0)
+ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1, int captureX, int captureY) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false),
+    rectX(0), rectY(0), rectR(0),
+    captureX(captureX), captureY(captureY)
 {
-
+    assert(captureY >= n0);
+    assert(captureX >= n1);
 }
 
 void ComputationWorker::fftshift(Mat img) {
@@ -104,16 +106,17 @@ void ComputationWorker::saveMat(QString filename, Mat& img) {
 }
 
 void ComputationWorker::doWork() {
+    qDebug() << "ComputationWorker initiated, captureX=" << captureX << "captureY=" << captureY;
 #ifdef DEBUG_PHONY_CAMERA
     Mat image = imread("holmos_raw.png", 0);
     assert(image.type() == CV_8UC1);
-    assert(image.rows == n0);
-    assert(image.cols == n1);
+    assert(image.rows == captureY);
+    assert(image.cols == captureX);
 #else
 	raspicam::RaspiCam_Cv camera;
 	camera.set(CV_CAP_PROP_FORMAT, CV_8UC3);
-	camera.set(CV_CAP_PROP_FRAME_WIDTH, 2592);
-	camera.set(CV_CAP_PROP_FRAME_HEIGHT, 1944);
+    camera.set(CV_CAP_PROP_FRAME_WIDTH, captureX);
+    camera.set(CV_CAP_PROP_FRAME_HEIGHT, captureY);
 	camera.open();
 
 #endif
@@ -141,6 +144,8 @@ void ComputationWorker::doWork() {
     }
 
 	Mat frame;
+    int left = floor((captureX - n1) / 2);
+    int top = floor((captureY - n0) / 2);
     Mat img(n0, n1, CV_32FC1);        
     Mat fourierTransform(n0, n1, CV_32FC2);
     Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
@@ -168,21 +173,21 @@ void ComputationWorker::doWork() {
 
         /* Load image and convert to floating point */
 #ifdef DEBUG_PHONY_CAMERA
-        img.forEach<float>([&image](float &p, const int position[]) -> void {
-                p = (float) image.at<unsigned char>(position[0], position[1]) / 255.0;
+        img.forEach<float>([&image, &left, &top](float &p, const int position[]) -> void {
+                p = (float) image.at<unsigned char>(top + position[0], left + position[1]) / 255.0;
         });
 #else
 		camera.grab();
 		camera.retrieve(frame);
-        img.forEach<float>([&frame](float &p, const int position[]) -> void {
-                p = frame.at<Point3_<uint8_t>>(position[0], position[1]).z / 255.0;
+        img.forEach<float>([&frame, &left, &top](float &p, const int position[]) -> void {
+                p = frame.at<Point3_<uint8_t>>(top + position[0], left + position[1]).z / 255.0;
         });
 #endif
+        qDebug() << "Emitting camera image";
 
 
 		
         emit cameraImageReady(asQImage(img));
-        qDebug() << img.at<float>(0) << img.at<float>(1023) << img.at<float>(n1);
 
         dft(img, fourierTransform, DFT_COMPLEX_OUTPUT);
 

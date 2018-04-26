@@ -24,15 +24,18 @@ SOURCES += \
     computationworker.cpp \
     imageselect.cpp \
     scaledimageview.cpp \
-    fpscounter.cpp
+    fpscounter.cpp \
+    settingsdialog.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     imageselect.h \
     scaledimageview.h \
-    fpscounter.h
+    fpscounter.h \
+    settingsdialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    settingsdialog.ui
 
 QMAKE_LFLAGS = -fopenmp -lfftw3_threads -lfftw3f -lfftw3f_threads
 QMAKE_CXXFLAGS = -fopenmp -std=c++14

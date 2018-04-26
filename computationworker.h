@@ -21,7 +21,7 @@ class ComputationWorker : public QObject
 {
     Q_OBJECT
 public:
-    explicit ComputationWorker(QObject *parent, int n0, int n1);
+    explicit ComputationWorker(QObject *parent, int n0, int n1, int captureX, int captureY);
     void doWork();
     void fftshift(cv::Mat);
     void multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
@@ -43,6 +43,7 @@ signals:
 public slots:
 private:
     const int n0, n1;
+    const int captureX, captureY;
     FPSCounter fps;
 
 

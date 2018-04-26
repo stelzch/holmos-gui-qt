@@ -8,6 +8,7 @@
 #include "imageselect.h"
 #include "scaledimageview.h"
 #include "computationworker.h"
+#include "settingsdialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,13 +32,16 @@ public slots:
     void phaseUnwrapCheckChanged(int);
     void satellitePointSelected(QPoint);
 
+    void actionSettingsPressed(bool);
+
 private:
     Ui::MainWindow *ui;
-    ComputationWorker ct;
+    ComputationWorker *ct;
     QThread thread1;
     ImageSelect satelliteSelector;
     ScaledImageView cameraViewer, phaseViewer;
     QSettings settings;
+    int n0, n1;
 
 };
 

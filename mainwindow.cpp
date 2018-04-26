@@ -4,18 +4,26 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow), ct(nullptr, CAMERA_HEIGHT, CAMERA_WIDTH),
+    ui(new Ui::MainWindow),
     settings("FRSEM", "HolMOS GUI")
 {
     ui->setupUi(this);
 
-    ct.moveToThread(&thread1);
-    connect(&thread1, &QThread::finished, &ct, &QObject::deleteLater);
-    connect(&thread1, &QThread::started, &ct, &ComputationWorker::doWork);
+    n0 = settings.value("capture/cropResX", 1024).value<int>();
+    n1 = settings.value("capture/cropResY", 1024).value<int>();
+    int captureX = settings.value("capture/captureResX", 1920).value<int>();
+    int captureY = settings.value("capture/captureResY", 1080).value<int>();
 
-    connect(&ct, SIGNAL(cameraImageReady(QImage)), this, SLOT(cameraImageReceived(QImage)));
-    connect(&ct, SIGNAL(magnitudeSpectrumReady(QImage)), this, SLOT(magnitudeSpectrumReceived(QImage)));
-    connect(&ct, SIGNAL(phaseAngleReady(QImage)), this, SLOT(phaseAngleReceived(QImage)));
+    ct = new ComputationWorker(nullptr, n0, n1, captureX, captureY);
+
+    ct->moveToThread(&thread1);
+    connect(&thread1, &QThread::finished, ct, &QObject::deleteLater);
+    connect(&thread1, &QThread::started, ct, &ComputationWorker::doWork);
+
+
+    connect(ct, SIGNAL(cameraImageReady(QImage)), this, SLOT(cameraImageReceived(QImage)));
+    connect(ct, SIGNAL(magnitudeSpectrumReady(QImage)), this, SLOT(magnitudeSpectrumReceived(QImage)));
+    connect(ct, SIGNAL(phaseAngleReady(QImage)), this, SLOT(phaseAngleReceived(QImage)));
 
     connect(ui->sliderRectX, SIGNAL(valueChanged(int)), this, SLOT(sliderRectXChanged(int)));
     connect(ui->sliderRectY, SIGNAL(valueChanged(int)), this, SLOT(sliderRectYChanged(int)));
@@ -24,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->phaseUnwrapCheck, SIGNAL(stateChanged(int)), this, SLOT(phaseUnwrapCheckChanged(int)));
 
     connect(&satelliteSelector, SIGNAL(pointSelected(QPoint)), this, SLOT(satellitePointSelected(QPoint)));
+
+    connect(ui->actionSettings, SIGNAL(triggered(bool)), this, SLOT(actionSettingsPressed(bool)));
 
     ui->scrollAreaTab1->setWidget(&cameraViewer);
     ui->scrollAreaTab2->setWidget(&satelliteSelector);
@@ -34,32 +44,38 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sliderRectX->setValue(settings.value("satellite/rect_x").value<int>());
     ui->sliderRectY->setValue(settings.value("satellite/rect_y").value<int>());
     ui->sliderRectR->setValue(settings.value("satellite/rect_r").value<int>());
-	  ui->sliderRectX->setMaximum(CAMERA_WIDTH);
-	  ui->sliderRectY->setMaximum(CAMERA_HEIGHT);
-    ct.rectX = settings.value("satellite/rect_x").value<int>();
-    ct.rectY = settings.value("satellite/rect_y").value<int>();
-    ct.rectR = settings.value("satellite/rect_r").value<int>();
-    qDebug() << "RectX: " << ct.rectX;
+    ui->sliderRectX->setMaximum(CAMERA_WIDTH);
+    ui->sliderRectY->setMaximum(CAMERA_HEIGHT);
+    ct->rectX = settings.value("satellite/rect_x").value<int>();
+    ct->rectY = settings.value("satellite/rect_y").value<int>();
+    ct->rectR = settings.value("satellite/rect_r").value<int>();
 
     thread1.start();
 
 }
 
+void MainWindow::actionSettingsPressed(bool) {
+    SettingsDialog d(this);
+    d.exec();
+
+    //qDebug() << "Returned ";
+}
+
 void MainWindow::sliderRectXChanged(int newval) {
-    ct.rectX = newval;
+    ct->rectX = ui->sliderRectX->value();
     satelliteSelector.updateXPos(newval);
 }
 void MainWindow::sliderRectYChanged(int newval) {
-    ct.rectY = newval;
+    ct->rectY = ui->sliderRectY->value();
     satelliteSelector.updateYPos(newval);
 }
 void MainWindow::sliderRectRChanged(int newval) {
-    ct.rectR = newval;
+    ct->rectR = ui->sliderRectR->value();
     satelliteSelector.setIndicatorRadius(newval);
 }
 
 void MainWindow::phaseUnwrapCheckChanged(int newval) {
-    ct.shouldUnwrapPhase = newval;
+    ct->shouldUnwrapPhase = newval;
 }
 
 void MainWindow::satellitePointSelected(QPoint p) {
@@ -76,7 +92,6 @@ void MainWindow::cameraImageReceived(QImage img) {
 
 void MainWindow::magnitudeSpectrumReceived(QImage img) {
     satelliteSelector.setImage(img);
-    //ui->magnitudeImage->setPixmap(QPixmap::fromImage(img).scaled(ui->scrollAreaTab2->width(), ui->cameraImage->height(), Qt::KeepAspectRatio));
 }
 
 void MainWindow::phaseAngleReceived(QImage img) {
@@ -87,13 +102,14 @@ MainWindow::~MainWindow()
 {
     qDebug() << "Ending main window";
     qDebug() << settings.value("satellite/rect_x", QVariant::Int);
-    settings.setValue("satellite/rect_x", ct.rectX);
-    settings.setValue("satellite/rect_y", ct.rectY);
-    settings.setValue("satellite/rect_r", ct.rectR);
+    settings.setValue("satellite/rect_x", ct->rectX);
+    settings.setValue("satellite/rect_y", ct->rectY);
+    settings.setValue("satellite/rect_r", ct->rectR);
     settings.sync();
     qDebug() << "Settings written";
-    ct.shouldStop = true;
+    ct->shouldStop = true;
     thread1.quit();
     thread1.wait();
     delete ui;
+    delete ct;
 }
