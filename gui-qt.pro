@@ -52,21 +52,18 @@ QMAKE_CXXFLAGS = -fopenmp -std=c++14
 }
 
 rpicam_v2 {
+    message(Using Raspberry Camera v2)
     DEFINES += CAMERA_WIDTH=3280
     DEFINES += CAMERA_HEIGHT=2464
 } else {
     DEFINES += CAMERA_WIDTH=2592
     DEFINES += CAMERA_HEIGHT=1944
 }
+
     
 
 
-PKGCONFIG += fftw3
-
-packagesExist(opencv) {
-    PKGCONFIG += opencv
-    DEFINES += USE_V4L2_CAMERA
-}
+PKGCONFIG += fftw3 libpng
 
 test {
     CONFIG += debug
@@ -86,3 +83,13 @@ test {
 unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
+LIBS += \
+        deps/build/lib/libopencv_videoio.a \
+        deps/build/lib/libopencv_imgcodecs.a \
+        deps/build/lib/libopencv_imgproc.a \
+        deps/build/lib/libopencv_core.a \
+        deps/build/3rdparty/lib/liblibjasper.a \
+        deps/build/3rdparty/lib/liblibprotobuf.a \
+        deps/build/3rdparty/lib/liblibwebp.a \
+        deps/build/3rdparty/ippicv/ippicv_lnx/lib/*/libippicv.a \
+        -ldl -ljpeg -ltiff -lIlmImf -lfftw3f

@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     n0 = settings.value("capture/cropResX", 1024).value<int>();
     n1 = settings.value("capture/cropResY", 1024).value<int>();
-    int captureX = settings.value("capture/captureResX", 2592).value<int>();
-    int captureY = settings.value("capture/captureResY", 1944).value<int>();
+    int captureX = settings.value("capture/captureResX", CAMERA_WIDTH).value<int>();
+    int captureY = settings.value("capture/captureResY", CAMERA_HEIGHT).value<int>();
 
     ct = new ComputationWorker(nullptr, n0, n1, captureX, captureY);
 
