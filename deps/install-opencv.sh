@@ -20,3 +20,4 @@ cmake -D BUILD_SHARED_LIBS=OFF -D WITH_OPENMP=ON \
     ../opencv-$VERSION
 
 make -j$(nproc)
+make install
