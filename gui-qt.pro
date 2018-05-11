@@ -63,7 +63,7 @@ rpicam_v2 {
     
 
 
-PKGCONFIG += fftw3 libpng
+PKGCONFIG += fftw3
 
 test {
     CONFIG += debug
@@ -83,13 +83,4 @@ test {
 unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-LIBS += \
-        deps/build/lib/libopencv_videoio.a \
-        deps/build/lib/libopencv_imgcodecs.a \
-        deps/build/lib/libopencv_imgproc.a \
-        deps/build/lib/libopencv_core.a \
-        deps/build/3rdparty/lib/liblibjasper.a \
-        deps/build/3rdparty/lib/liblibprotobuf.a \
-        deps/build/3rdparty/lib/liblibwebp.a \
-        deps/build/3rdparty/ippicv/ippicv_lnx/lib/*/libippicv.a \
-        -ldl -ljpeg -ltiff -lIlmImf -lfftw3f
+LIBS += `pkg-config --static --libs opencv zlib`
