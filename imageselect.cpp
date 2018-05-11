@@ -7,7 +7,7 @@ using std::max;
 ImageSelect::ImageSelect(QWidget *parent) : QWidget(parent),
     selectX(0), selectY(0), imgX(0), imgY(0), indicatorR(0)
 {
-    QImage img(1, 1, QImage::Format_Grayscale8);
+    QImage img(1, 1, QImage::Format_RGB888);
     emit setImage(img);
 }
 
