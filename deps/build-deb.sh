@@ -18,7 +18,7 @@ Version: 0.1
 Section: science
 Priority: optional
 Architecture: armhf
-Dependes: libfftw3-bin libfftw3-single3 libqt5core5a libqt5gui5 libqt5widgets5 libqt5test5
+Depends: libfftw3-bin, libfftw3-single3, libqt5core5a, libqt5gui5,libqt5widgets5, libqt5test5
 Maintainer: Christoph Stelz <mail@ch-st.de>
 Description: Imaging Program for the HolMOS project
 Installed-Size: $INSTALLED_SIZE
