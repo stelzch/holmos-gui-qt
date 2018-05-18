@@ -36,6 +36,7 @@ Clone the repo and build the docker image (takes a while):
 ```
 git clone https://github.com/stelzch/holmos-gui-qt.git
 cd holmos-gui-qt
+docker run --rm --privileged multiarch/qemu-user-static:register --reset
 docker build -t holmosbuild .
 ```
 Now to compile you can run this on the local tree:
