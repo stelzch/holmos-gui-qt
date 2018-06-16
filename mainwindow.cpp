@@ -46,6 +46,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     thread1.start();
 
+    threedViewer = new MOpenGLWidget();
+    ui->verticalLayout_4->addWidget(threedViewer);
+
 }
 
 void MainWindow::actionSettingsPressed(bool) {
@@ -89,7 +92,9 @@ void MainWindow::magnitudeSpectrumReceived(QImage img) {
 }
 
 void MainWindow::phaseAngleReceived(QImage img) {
-    phaseViewer.setImage(img);
+    QImage conv = img.convertToFormat(QImage::Format_RGB888);
+    phaseViewer.setImage(conv);
+    threedViewer->showImage(img.convertToFormat(QImage::Format_RGB888));
 }
 
 void MainWindow::dimensionsChanged(int width, int height) {
@@ -117,4 +122,5 @@ MainWindow::~MainWindow()
     thread1.wait();
     delete ui;
     delete ct;
+    delete threedViewer;
 }

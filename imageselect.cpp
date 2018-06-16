@@ -77,4 +77,6 @@ QSize ImageSelect::sizeHint() const {
 
 void ImageSelect::setImage(QImage &img) {
     this->img = img;
+
+    this->update();
 }

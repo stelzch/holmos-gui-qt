@@ -7,7 +7,8 @@ ImageRetriever::ImageRetriever(QString camServerUrl) : QObject()
     req.setUrl(QUrl(camServerUrl + "/raw"));
 
     QObject::connect(manager, SIGNAL(finished(QNetworkReply*)), &sync, SLOT(quit()));
-
+    QObject::connect(&timeouter, SIGNAL(timeout()), &sync, SLOT(quit()));
+    QObject::connect(&timeouter, SIGNAL(timeout()), this, SLOT(timeout()));
 
 }
 
@@ -17,6 +18,7 @@ ImageRetriever::~ImageRetriever() {
 }
 
 Mat ImageRetriever::retrieve() {
+    timeouter.start(30*1000);
     QNetworkReply *rep = manager->get(req);
     sync.exec();
 
@@ -55,11 +57,9 @@ Mat ImageRetriever::retrieve() {
 
     rep->read(res.ptr<char>(), rep->bytesAvailable());
 
-    qDebug() << res.at<uint16_t>(50);
-    Mat out;
-    res.convertTo(out, CV_8UC3, 0.25);
-    cv::imwrite("/tmp/test.png", out);
-
     return res;
 }
 
+void ImageRetriever::timeout() {
+    throw new ImageRetrivalException("Timeout when connecting to CamServer");
+}

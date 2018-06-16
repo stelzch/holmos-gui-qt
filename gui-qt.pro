@@ -27,7 +27,8 @@ SOURCES += \
     fpscounter.cpp \
     settingsdialog.cpp \
     imageretriever.cpp \
-    exceptions.cpp
+    exceptions.cpp \
+    mopenglwidget.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
@@ -36,7 +37,8 @@ HEADERS  += mainwindow.h \
     fpscounter.h \
     settingsdialog.h \
     imageretriever.h \
-    exceptions.h
+    exceptions.h \
+    mopenglwidget.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui
@@ -66,3 +68,11 @@ unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
 LIBS += `pkg-config --with-path $$PWD/deps/build/unix-install --static --libs opencv`
+
+DISTFILES += \
+    simple.vsh \
+    simple.fsh \
+    simple.vsh
+
+RESOURCES += \
+    res.qrc

@@ -3,6 +3,7 @@
 
 #include <QtNetwork>
 #include <QObject>
+#include <QTimer>
 #include <opencv2/opencv.hpp>
 
 
@@ -18,10 +19,13 @@ public:
 
 signals:
     void retrieveError();
+public slots:
+    void timeout();
 private:
     QNetworkRequest req;
     QNetworkAccessManager *manager;
     QEventLoop sync;
+    QTimer timeouter;
 
 };
 

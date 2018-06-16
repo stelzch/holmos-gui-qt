@@ -9,6 +9,7 @@
 #include "scaledimageview.h"
 #include "computationworker.h"
 #include "settingsdialog.h"
+#include "mopenglwidget.h"
 
 namespace Ui {
 class MainWindow;
@@ -44,6 +45,7 @@ private:
     ScaledImageView cameraViewer, phaseViewer;
     QSettings settings;
     int n0, n1;
+    MOpenGLWidget *threedViewer;
 
 };
 
