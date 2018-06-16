@@ -31,8 +31,10 @@ public slots:
     void sliderRectRChanged(int);
     void phaseUnwrapCheckChanged(int);
     void satellitePointSelected(QPoint);
-
     void actionSettingsPressed(bool);
+
+    void dimensionsChanged(int, int);
+    void computationStatusMessage(QString);
 
 private:
     Ui::MainWindow *ui;

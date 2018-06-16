@@ -1,22 +1,19 @@
 #include "computationworker.h"
+#include "imageretriever.h"
+#include "exceptions.h"
 #include <opencv2/opencv.hpp>
 #include <cassert>
-
-#ifndef DEBUG_PHONY_CAMERA
-#include <raspicam/raspicam_cv.h>
-#endif
 
 using namespace cv;
 using namespace std;
 
 typedef Point2f ComplexPixel;
 
-ComputationWorker::ComputationWorker(QObject *parent, int n0, int n1, int captureX, int captureY) : QObject(parent), shouldStop(false), n0(n0), n1(n1), shouldUnwrapPhase(false),
-    rectX(0), rectY(0), rectR(0),
-    captureX(captureX), captureY(captureY)
+ComputationWorker::ComputationWorker(QObject *parent) : QObject(parent), shouldStop(false), shouldUnwrapPhase(false)
 {
-    assert(captureY >= n0);
-    assert(captureX >= n1);
+    rectX = 0;
+    rectY = 0;
+    rectR = 0;
 }
 
 void ComputationWorker::fftshift(Mat img) {
@@ -101,26 +98,27 @@ void ComputationWorker::divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& 
     });
 }
 
-void ComputationWorker::saveMat(QString filename, Mat& img) {
-    
-}
 
 void ComputationWorker::doWork() {
-    qDebug() << "ComputationWorker initiated, captureX=" << captureX << "captureY=" << captureY;
-#ifdef DEBUG_PHONY_CAMERA
-    Mat image = imread("holmos_raw.png", 0);
-    assert(image.type() == CV_8UC1);
-    assert(image.rows == captureY);
-    assert(image.cols == captureX);
-#else
-	raspicam::RaspiCam_Cv camera;
-	camera.set(CV_CAP_PROP_FORMAT, CV_8UC3);
-    camera.set(CV_CAP_PROP_FRAME_WIDTH, captureX);
-    camera.set(CV_CAP_PROP_FRAME_HEIGHT, captureY);
-	camera.open();
+    emit statusMessage("Initializing buffers and fetching test image");
+    qDebug() << "Starting ComputationWorker with CamURL: " << camUrl;
+    ImageRetriever ir(camUrl);
 
-#endif
-    /* Create r2s array */
+    Mat t;
+    try {
+        t = ir.retrieve();
+        emit dimensionsChanged(t.cols, t.rows);
+        qDebug() << t.cols;
+
+    } catch(ImageRetrivalException *e) {
+        // Something went wrong, just take the easy way out for now...
+        qDebug() << "Unable to request image";
+        return;
+    }
+    int n0 = t.rows;
+    int n1 = t.cols;
+
+    /* Create r2s array needed for phase unwrap*/
     Mat r2s_real(n0*2, n1*2, CV_32FC1);
     std::vector<double> x2;
     std::vector<double> y2;
@@ -143,16 +141,15 @@ void ComputationWorker::doWork() {
         }
     }
 
-	Mat frame;
-    int left = floor((captureX - n1) / 2);
-    int top = floor((captureY - n0) / 2);
-    Mat img(n0, n1, CV_32FC1);        
+    Mat img(n0, n1, CV_32FC1);
     Mat fourierTransform(n0, n1, CV_32FC2);
     Mat planes[] = {img, Mat::zeros(n0, n1, CV_32FC1)};
     Mat magnitudeSpectrum(n0, n1, CV_32FC1);
+
     Mat cropped = Mat::zeros(n0, n1, CV_32FC2);
     Mat phaseAngle(n0, n1, CV_32FC1);
     Mat phaseAngleNorm(n0, n1, CV_32FC1);
+
     Mat mirror = Mat::zeros(n0*2, n1*2, CV_32FC2);
     Mat holo_sin_real(n0*2, n1*2, CV_32FC1);
     Mat holo_cos_real(n0*2, n1*2, CV_32FC1);
@@ -160,70 +157,85 @@ void ComputationWorker::doWork() {
     Mat phi_prime(n0, n1, CV_32FC1);
     Mat unwrapped_phase(n0, n1, CV_32FC1);
     Mat buffer1(2*n0, 2*n1, CV_32FC2);
-
-    
-    fftwf_plan fft1, fft2;
     fftwf_complex *fft_buffer = (fftwf_complex *) fftwf_malloc(n0*2*n1*2*sizeof(fftwf_complex));
-    fft1 = fftwf_plan_dft_2d(n0, n1, fft_buffer, fft_buffer, FFTW_FORWARD, FFTW_ESTIMATE);
-    fft2 = fftwf_plan_dft_r2c_2d(n0, n1, img.ptr<float>(),
-        reinterpret_cast<fftwf_complex*>(fourierTransform.ptr<ComplexPixel>()),
-        FFTW_ESTIMATE);
 
-    while(shouldStop == false) {
+    while(!shouldStop) {
+        /* ===================================
+         * STEP 1
+         * ===================================
+         * Grab the image from the cam server
+         */
+        emit statusMessage("Grabbing frame from camera");
+        Mat frame = ir.retrieve();
+        extractChannel(frame, frame, 0); // Extract the red channel
+        frame.convertTo(img, CV_32FC1, 1/1024.0); // Convert to floating point
 
-        /* Load image and convert to floating point */
-#ifdef DEBUG_PHONY_CAMERA
-        img.forEach<float>([&image, &left, &top](float &p, const int position[]) -> void {
-                p = (float) image.at<unsigned char>(top + position[0], left + position[1]) / 255.0;
-        });
-#else
-		camera.grab();
-		camera.retrieve(frame);
-        img.forEach<float>([&frame, &left, &top](float &p, const int position[]) -> void {
-                p = frame.at<Point3_<uint8_t>>(top + position[0], left + position[1]).z / 255.0;
-        });
-#endif
-        qDebug() << "Emitting camera image";
-
-
-		
         emit cameraImageReady(asQImage(img));
 
+        /* =======================================
+         * STEP 2
+         * =======================================
+         * Calculate the fourier magnitude spectrum
+         */
+        emit statusMessage("Calculating fourier transform");
+
+        // Perform a discrete fourier transform
         dft(img, fourierTransform, DFT_COMPLEX_OUTPUT);
 
+        fftshift(fourierTransform); // Center the zero frequency
+        split(fourierTransform, planes); // Extract the imaginary and real values into seperate matrices
+        cv::magnitude(planes[0], planes[1], magnitudeSpectrum); // Calculate the magnitude spectrum (absolue value of complex number)
+        magnitudeSpectrum += Scalar::all(1); // Add 1 to avoid exception when logarithming
+        log(magnitudeSpectrum, magnitudeSpectrum); // Make the values logarithmic
+        normalize(magnitudeSpectrum, magnitudeSpectrum, 0, 1, CV_MINMAX); // Normalize them before outputting to avoid clipping
 
-        fftshift(fourierTransform);                
-        split(fourierTransform, planes);
-        cv::magnitude(planes[0], planes[1], magnitudeSpectrum);
-        magnitudeSpectrum += Scalar::all(1);
-        log(magnitudeSpectrum, magnitudeSpectrum);
-        normalize(magnitudeSpectrum, magnitudeSpectrum, 0, 1, CV_MINMAX);
 
+        qDebug() << "Calc finished";
         emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
+        qDebug() << "Magnitude Spectrum emitted";
 
+        /* =========================================
+         * STEP 3
+         * =========================================
+         * Extract satellite and compute phase angle
+         */
+        emit statusMessage("Calculating phase angle");
+        qDebug() << rectX << rectY << rectR;
+        // Reset the cropped array to 0
         cropped.forEach<ComplexPixel>([](ComplexPixel &p, const int pos[]) -> void {
             p.x = 0.0;
             p.y = 0.0;
         });
-        Rect cropRect(rectX-rectR, rectY-rectR, rectR*2, rectR*2);
-        Rect destRect(n1/2-rectR, n0/2-rectR, rectR*2, rectR*2);
-        Mat satellite(fourierTransform, cropRect);
+        // Define the target and source rectangles
+        Rect cropRect(rectX-rectR, rectY-rectR, rectR*2, rectR*2); // <- Source (Satellite)
+        Rect destRect(n1/2-rectR, n0/2-rectR, rectR*2, rectR*2); // <- Target/Dest (Centered)
+        Mat satellite(fourierTransform, cropRect); // <- Satellite pixel values
         satellite.copyTo(cropped(destRect));
-        
+
+        // Shift it and compute the inverse fourier transform
         fftshift(cropped);
         dft(cropped, cropped, DFT_INVERSE);
-        
-        qDebug() << cropped.cols << cropped.rows;
+
+        // For each pixel in the phaseAngle-matrix, compute the argument of each complex number
         phaseAngle.forEach<float>([&cropped](float&p, const int pos[]) -> void {
                 ComplexPixel cr = cropped.at<ComplexPixel>(pos[0], pos[1]);
                 p = float(atan2(cr.y, cr.x));
         });
-        qDebug() << phaseAngle.at<float>(103) << phaseAngle.at<float>(1024);
-        normalize(phaseAngle, phaseAngleNorm, 0, 1.0, NORM_MINMAX);
+
 
         if(!shouldUnwrapPhase) {
+            // If we do not need to unwrap the phase, we're done here
+            normalize(phaseAngle, phaseAngleNorm, 0, 1.0, NORM_MINMAX);
             emit phaseAngleReady(asQImage(phaseAngleNorm));
         } else {
+
+            /* ================================
+             * STEP 4 (optional)
+             * ================================
+             * Unwrap the phase
+             */
+            emit statusMessage("Unwrapping phase angle");
+            // Mirror the phaseAngle-matrix on the bottom x-axis, and then again on the y-axis
             for(int y=0; y<n0; y++) {
                 for(int x=0; x<n1; x++) {
                     float val = phaseAngle.at<float>(y, x);
@@ -234,6 +246,7 @@ void ComputationWorker::doWork() {
                     mirror.at<ComplexPixel>(2*n0 - y - 1, 2*n1 - x - 1).x = val;
                 }
             }
+            // Compute the sine and cosine values of the mirror
             holo_sin_real.forEach<float>([&mirror](float &p, const int pos[]) -> void {
                     p = sin(mirror.at<ComplexPixel>(pos[0], pos[1]).x);
             });
@@ -249,12 +262,11 @@ void ComputationWorker::doWork() {
                     p.y = 0;
             });
 
+            // Compute various ffts
             dft(holo_sin_real, holo_sin, DFT_COMPLEX_OUTPUT);
             multiplyReal(holo_sin, r2s_real, holo_sin);
             dft(holo_sin, holo_sin, DFT_INVERSE);
             multiplyReal(holo_sin, holo_cos_real, holo_sin);
-
-
 
 
             dft(holo_cos_real, holo_cos, DFT_COMPLEX_OUTPUT);
@@ -275,7 +287,7 @@ void ComputationWorker::doWork() {
 
             phi_prime.forEach<float>([&buffer1](float &p, const int pos[]) -> void {
                     p = buffer1.at<ComplexPixel>(pos[0], pos[1]).x;
-            }); 
+            });
 
             unwrapped_phase.forEach<float>([&phi_prime, &phaseAngle](float &p, const int pos[]) -> void {
                     float phase = phaseAngle.at<float>(pos[0], pos[1]);
@@ -286,6 +298,77 @@ void ComputationWorker::doWork() {
             normalize(unwrapped_phase, unwrapped_phase, 0, 1, CV_MINMAX);
             emit phaseAngleReady(asQImage(unwrapped_phase));
         }
+
+
     }
+//    qDebug() << "ComputationWorker initiated, captureX=" << captureX << "captureY=" << captureY;
+//#ifdef DEBUG_PHONY_CAMERA
+//    qDebug() << "[DEBUG] Loading fake camera image from holmos_raw.png, expected to be " << captureX << captureY;
+//    Mat image = imread("holmos_raw.png", 0);
+//    assert(image.type() == CV_8UC1);
+//    assert(image.rows == captureY);
+//    assert(image.cols == captureX);
+//#else
+//	raspicam::RaspiCam_Cv camera;
+//	camera.set(CV_CAP_PROP_FORMAT, CV_8UC3);
+//    camera.set(CV_CAP_PROP_FRAME_WIDTH, captureX);
+//    camera.set(CV_CAP_PROP_FRAME_HEIGHT, captureY);
+//	camera.open();
+
+//#endif
+//
+
+//	Mat frame;
+//    int left = floor((captureX - n1) / 2);
+//    int top = floor((captureY - n0) / 2);
+
+//
+//    Mat cropped = Mat::zeros(n0, n1, CV_32FC2);
+//    Mat phaseAngle(n0, n1, CV_32FC1);
+//    Mat phaseAngleNorm(n0, n1, CV_32FC1);
+//
+
+
+
+    
+//    fftwf_plan fft1, fft2;
+//
+//    fft1 = fftwf_plan_dft_2d(n0, n1, fft_buffer, fft_buffer, FFTW_FORWARD, FFTW_ESTIMATE);
+//    fft2 = fftwf_plan_dft_r2c_2d(n0, n1, img.ptr<float>(),
+//        reinterpret_cast<fftwf_complex*>(fourierTransform.ptr<ComplexPixel>()),
+//        FFTW_ESTIMATE);
+
+//    while(shouldStop == false) {
+
+//        /* Load image and convert to floating point */
+//#ifdef DEBUG_PHONY_CAMERA
+//        img.forEach<float>([&image, &left, &top](float &p, const int position[]) -> void {
+//                p = (float) image.at<unsigned char>(top + position[0], left + position[1]) / 255.0;
+//        });
+//#else
+//		camera.grab();
+//		camera.retrieve(frame);
+//        img.forEach<float>([&frame, &left, &top](float &p, const int position[]) -> void {
+//                p = frame.at<Point3_<uint8_t>>(top + position[0], left + position[1]).z / 255.0;
+//        });
+//#endif
+//        qDebug() << "Emitting camera image";
+
+
+		
+//        emit cameraImageReady(asQImage(img));
+
+//
+
+
+
+//
+
+//        if(!shouldUnwrapPhase) {
+//            emit phaseAngleReady(asQImage(phaseAngleNorm));
+//        } else {
+//
+//        }
+//    }
 
 }

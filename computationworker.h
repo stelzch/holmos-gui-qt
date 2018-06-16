@@ -21,29 +21,29 @@ class ComputationWorker : public QObject
 {
     Q_OBJECT
 public:
-    explicit ComputationWorker(QObject *parent, int n0, int n1, int captureX, int captureY);
+    explicit ComputationWorker(QObject *parent = 0);
     void doWork();
     void fftshift(cv::Mat);
     void multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
     void multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
     void divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
     void divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
-    void saveMat(QString filename, cv::Mat& mat);
 
     QImage asQImage(cv::Mat);
     bool shouldStop;
     int rectX, rectY, rectR;
     bool shouldUnwrapPhase;
+    QString camUrl;
 
 signals:
     void cameraImageReady(QImage);
     void magnitudeSpectrumReady(QImage);
     void phaseAngleReady(QImage);
+    void dimensionsChanged(int width, int height);
+    void statusMessage(QString);
 
 public slots:
 private:
-    const int n0, n1;
-    const int captureX, captureY;
     FPSCounter fps;
 
 

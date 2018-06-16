@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui testlib
+QT       += core gui testlib network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -25,14 +25,18 @@ SOURCES += \
     imageselect.cpp \
     scaledimageview.cpp \
     fpscounter.cpp \
-    settingsdialog.cpp
+    settingsdialog.cpp \
+    imageretriever.cpp \
+    exceptions.cpp
 
 HEADERS  += mainwindow.h \
     computationworker.h \
     imageselect.h \
     scaledimageview.h \
     fpscounter.h \
-    settingsdialog.h
+    settingsdialog.h \
+    imageretriever.h \
+    exceptions.h
 
 FORMS    += mainwindow.ui \
     settingsdialog.ui
@@ -40,29 +44,7 @@ FORMS    += mainwindow.ui \
 QMAKE_LFLAGS = -fopenmp -lfftw3_threads -lfftw3f -lfftw3f_threads
 QMAKE_CXXFLAGS = -fopenmp -std=c++14
 
-!debug {
-    QMAKE_LFLAGS += -O3
-    QMAKE_CXXFLAGS += -O3
-}
-
-!rpi {
-    DEFINES += DEBUG_PHONY_CAMERA
-} else {
-    QMAKE_LFLAGS += -lraspicam_cv
-}
-
-rpicam_v2 {
-    message(Using Raspberry Camera v2)
-    DEFINES += CAMERA_WIDTH=3280
-    DEFINES += CAMERA_HEIGHT=2464
-} else {
-    DEFINES += CAMERA_WIDTH=2592
-    DEFINES += CAMERA_HEIGHT=1944
-}
-
-    
-
-
+DEFINES += DEBUG_PHONY_CAMERA
 PKGCONFIG += fftw3
 
 test {
@@ -83,4 +65,4 @@ test {
 unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-LIBS += `pkg-config --static --libs opencv`
+LIBS += `pkg-config --with-path $$PWD/deps/build/unix-install --static --libs opencv`

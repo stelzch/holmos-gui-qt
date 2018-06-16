@@ -9,17 +9,20 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    n0 = settings.value("capture/cropResX", 1024).value<int>();
-    n1 = settings.value("capture/cropResY", 1024).value<int>();
-    int captureX = settings.value("capture/captureResX", CAMERA_WIDTH).value<int>();
-    int captureY = settings.value("capture/captureResY", CAMERA_HEIGHT).value<int>();
+    bool settingsNew = settings.value("misc/settingsWritten", true).value<bool>();
+    if(settingsNew) {
 
-    ct = new ComputationWorker(nullptr, n0, n1, captureX, captureY);
+    }
+
+    ct = new ComputationWorker();
+    ct->camUrl = settings.value("capture/camUrl", "http://127.0.0.1:3000").value<QString>();
 
     ct->moveToThread(&thread1);
     connect(&thread1, &QThread::finished, ct, &QObject::deleteLater);
     connect(&thread1, &QThread::started, ct, &ComputationWorker::doWork);
 
+    connect(ct, SIGNAL(dimensionsChanged(int,int)), this, SLOT(dimensionsChanged(int,int)));
+    connect(ct, SIGNAL(statusMessage(QString)), this, SLOT(computationStatusMessage(QString)));
 
     connect(ct, SIGNAL(cameraImageReady(QImage)), this, SLOT(cameraImageReceived(QImage)));
     connect(ct, SIGNAL(magnitudeSpectrumReady(QImage)), this, SLOT(magnitudeSpectrumReceived(QImage)));
@@ -40,15 +43,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_3->setWidget(&phaseViewer);
 
     /* Load slider positions from settings */
-    settings.sync();
-    ui->sliderRectX->setValue(settings.value("satellite/rect_x").value<int>());
-    ui->sliderRectY->setValue(settings.value("satellite/rect_y").value<int>());
-    ui->sliderRectR->setValue(settings.value("satellite/rect_r").value<int>());
-    ui->sliderRectX->setMaximum(CAMERA_WIDTH);
-    ui->sliderRectY->setMaximum(CAMERA_HEIGHT);
-    ct->rectX = settings.value("satellite/rect_x").value<int>();
-    ct->rectY = settings.value("satellite/rect_y").value<int>();
-    ct->rectR = settings.value("satellite/rect_r").value<int>();
 
     thread1.start();
 
@@ -96,6 +90,17 @@ void MainWindow::magnitudeSpectrumReceived(QImage img) {
 
 void MainWindow::phaseAngleReceived(QImage img) {
     phaseViewer.setImage(img);
+}
+
+void MainWindow::dimensionsChanged(int width, int height) {
+    qDebug() << "Resetting slider maxes";
+    ui->sliderRectX->setMaximum(width);
+    ui->sliderRectY->setMaximum(height);
+    ui->sliderRectR->setMaximum(height / 4);
+}
+
+void MainWindow::computationStatusMessage(QString str) {
+    ui->statusBar->showMessage(str);
 }
 
 MainWindow::~MainWindow()
