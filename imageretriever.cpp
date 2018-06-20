@@ -36,7 +36,6 @@ Mat ImageRetriever::retrieve() {
 
     try {
         foreach(QNetworkReply::RawHeaderPair header, rep->rawHeaderPairs()) {
-            qDebug() << header.first << header.second;
             if(header.first == "X-Array-Width")
                 w = header.second.toInt();
             if(header.first == "X-Array-Height")
@@ -50,7 +49,6 @@ Mat ImageRetriever::retrieve() {
     }
     qDebug() << w << h << c << rep->bytesAvailable();
     Mat res(h, w, CV_16UC3);
-    qDebug() << "Mat created";
 
     // 16bit, so * 2
     assert(rep->bytesAvailable() == w*h*c*2);

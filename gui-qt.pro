@@ -67,7 +67,7 @@ test {
 unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-LIBS += `pkg-config --with-path $$PWD/deps/build/unix-install --static --libs opencv`
+LIBS += `PKG_CONFIG_PATH=$$PWD/deps/build/unix-install pkg-config --static --libs opencv`
 
 DISTFILES += \
     simple.vsh \

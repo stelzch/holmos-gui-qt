@@ -41,6 +41,7 @@ signals:
     void phaseAngleReady(QImage);
     void dimensionsChanged(int width, int height);
     void statusMessage(QString);
+    void computeRunningStateChanged(bool);
 
 public slots:
 private:

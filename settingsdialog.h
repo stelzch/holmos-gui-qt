@@ -17,9 +17,6 @@ public:
     explicit SettingsDialog(QWidget *parent = 0);
     ~SettingsDialog();
 
-public slots:
-    void captureResolutionChanged(int);
-
 private:
     Ui::SettingsDialog *ui;
     QSettings settings;

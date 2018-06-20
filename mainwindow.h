@@ -30,12 +30,16 @@ public slots:
     void sliderRectXChanged(int);
     void sliderRectYChanged(int);
     void sliderRectRChanged(int);
+    void sliderHeightChanged(int);
     void phaseUnwrapCheckChanged(int);
     void satellitePointSelected(QPoint);
     void actionSettingsPressed(bool);
 
     void dimensionsChanged(int, int);
     void computationStatusMessage(QString);
+
+    void computeButtonPressed();
+    void computeRunningState(bool);
 
 private:
     Ui::MainWindow *ui;
@@ -46,6 +50,7 @@ private:
     QSettings settings;
     int n0, n1;
     MOpenGLWidget *threedViewer;
+    bool computeButtonRunning=false;
 
 };
 

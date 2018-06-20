@@ -100,23 +100,42 @@ void ComputationWorker::divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& 
 
 
 void ComputationWorker::doWork() {
+    emit computeRunningStateChanged(true);
+    QSettings settings("FRSEM", "HolMOS GUI");
+
+    int cropX = settings.value("capture/cropX", -1).value<int>();
+    int cropY = settings.value("capture/cropY", -1).value<int>();
+
     emit statusMessage("Initializing buffers and fetching test image");
     qDebug() << "Starting ComputationWorker with CamURL: " << camUrl;
     ImageRetriever ir(camUrl);
 
     Mat t;
+    int n0=-5;
+    int n1=-5;
+    qDebug() << "Crop before: " << cropX << cropY;
     try {
         t = ir.retrieve();
-        emit dimensionsChanged(t.cols, t.rows);
-        qDebug() << t.cols;
+        if(cropX > t.cols || cropX < 0) cropX = t.cols;
+        if(cropY > t.rows || cropY < 0) cropY = t.rows;
+        qDebug() << "Crop after: " << cropX << cropY;
+        n0 = cropY;
+        n1 = cropX;
+        qDebug() << t.cols << t.rows;
+        emit dimensionsChanged(cropX, cropY);
 
     } catch(ImageRetrivalException *e) {
         // Something went wrong, just take the easy way out for now...
         qDebug() << "Unable to request image";
+        emit computeRunningStateChanged(false);
         return;
     }
-    int n0 = t.rows;
-    int n1 = t.cols;
+
+    /** TODO: Select centered crop region, not upper left */
+    Rect cropRegion(0, 0, n1, n0);
+    qDebug() << "Roi selected";
+    qDebug() << cropRegion.x << cropRegion.y << cropRegion.width << cropRegion.height;
+    qDebug() << n0 << n1;
 
     /* Create r2s array needed for phase unwrap*/
     Mat r2s_real(n0*2, n1*2, CV_32FC1);
@@ -135,9 +154,6 @@ void ComputationWorker::doWork() {
     for(int y=0; y<n0*2; y++) {
         for(int x=0; x<n1*2; x++) {
             r2s_real.at<float>(y, x) = x2.at(x) + y2.at(y) + 1e-10;
-            if(x2.at(x) + y2.at(y) +1e-10 < 1e-10) {
-                qDebug() << "ohoh: " << x << y << x2.at(x) + y2.at(y);
-            }
         }
     }
 
@@ -159,6 +175,8 @@ void ComputationWorker::doWork() {
     Mat buffer1(2*n0, 2*n1, CV_32FC2);
     fftwf_complex *fft_buffer = (fftwf_complex *) fftwf_malloc(n0*2*n1*2*sizeof(fftwf_complex));
 
+
+
     while(!shouldStop) {
         /* ===================================
          * STEP 1
@@ -168,7 +186,7 @@ void ComputationWorker::doWork() {
         emit statusMessage("Grabbing frame from camera");
         Mat frame = ir.retrieve();
         extractChannel(frame, frame, 0); // Extract the red channel
-        frame.convertTo(img, CV_32FC1, 1/1024.0); // Convert to floating point
+        frame(cropRegion).convertTo(img, CV_32FC1, 1/1024.0); // Convert to floating point
 
         emit cameraImageReady(asQImage(img));
 
@@ -301,4 +319,5 @@ void ComputationWorker::doWork() {
 
 
     }
+    emit computeRunningStateChanged(false);
 }
