@@ -1,52 +1,49 @@
 # gui-qt
-Used on the raspberry to analyse the image.
+Eine Qt-basierte GUI-Anwendung zur Auswertung von holographisch-mikroskopischer Aufnahmen.
 
 ## Installation
-This program has several dependencies:
+Das Programm hat mehrere Abhängigkeiten:
 
-  * [OpenCV](https://opencv.org) with C++11-support for lambda expressions
-  * [raspicam](https://www.uco.es/investiga/grupos/ava/node/40) library
-  * [fftw](http://fftw.org/)
-  * Qt5
+    * [OpenCV](https://opencv.org) mit C++11-Unterstützung für lambda-Ausdrücke
+    * [fftw](http://fftw.org)
+    * Qt 5
 
-Qt and fftw can be installed from debian packages:
+Um Qt und fftw auf einem Raspberry mit raspbian zu installieren, einfach folgende Kommandos ausführen:
 ```
 sudo apt update && \
 sudo apt install qt5-default qmake libfftw3-dev
 ```
 
-There is an OpenCV version in the debian repository, however it is really old and does not support the shiny new stuff this program uses. In addition, if OpenCV is compiled by hand on the raspberry, we can activate several optimizations to improve performance with ARM Neon.
+Es gibt auch ein OpenCV-Build in den offiziellen Repos von Raspbian, allerdings ist diese Version vergleichsweise alt und unterstützt kein C++11, weshalb für gui-qt eine aktuellere OpenCV-Version installiert werden muss.
 
-Install the debian packages provided with the latest release using
-```
-dpkg -i OpenCV*.deb
-```
+Um OpenCV automatisiert zu kompilieren und installieren, einfach das `deps/install-opencv.sh`-Skript ausführen.
 
-Compiling raspicam is pretty straightforward, the detailed instructions can be followed on their homepage.
-
-When all these requirements are obtained, you can clone this git repo and issue the following commands to compile the software:
+## Compilation
+Nach Installation oben genannter Dependencies sind folgende Kommandos im Projekt-Verzeichnis auszuführen:
 ```
-qmake CONFIG+=rpicam_v2 &&
-make -j2 &&
+qmake && \
+make -j4 && \
 sudo make install
 ```
 
-## Build using docker
-Clone the repo and build the docker image (takes a while):
+## Docker-Build
+Um die gui-qt-Builds reproduzierbar und cross-kompilierbar zu machen, wird ein Docker-Image zur Verfügung gestellt, das auf jedem beliebigen Docker-unterstützten x86-System ausgeführt werden kann.
+Mehr Informationen zur Installation und Benutzung von Docker gibt es auf der offiziellen [Projektseite](https://www.docker.com).
+
+Um die cross-compilation und dependencies vorzubereiten, muss das Docker-Image zuerst gebaut werden:
 ```
-git clone https://github.com/stelzch/holmos-gui-qt.git
-cd holmos-gui-qt
 docker run --rm --privileged multiarch/qemu-user-static:register --reset
 docker build -t holmosbuild .
 ```
-Now to compile you can run this on the local tree:
+Dies kann eine ganze Weile dauern, die darauffolgenden Builds von gui-qt sind aber drastisch schneller.
+
+Im Projektverzeichnis kann dann folgender Command ausgeführt werden, um gui-qt für den Raspberry zu bauen:
 ```
 docker run -v $(pwd):/build holmosbuild
 ```
-and if all goes/compiles well the container will drop a binary `holmos-viewer.deb` package right in your working directory that you can redistribute to any pi.
 
-Install with:
+Falls alles glatt läuft, befindet sich nun eine `holmos-viewer.deb`-Datei im Verzeichnis, dass auf dem Raspberry Pi folgendermaßen installiert werden kann:
 ```
-sudo dpkg -i holmos-viewer.deb
-sudo apt-get -f install
+pi@raspberrypi$ sudo dpkg -i holmos-viewer.deb
+pi@raspberrypi$ sudo apt-get -f install
 ```
