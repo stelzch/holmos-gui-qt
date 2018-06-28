@@ -3,11 +3,15 @@ language: cpp
 services:
 - docker
 before_install:
+- git config --local user.name "Christoph Stelz"
+- git config --local user.email "mail@ch-st.de"
+- git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
 - docker pull cstelz/holmos-build-x86
 script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
 - "./build_appimage.sh"
 deploy:
+  skip_cleanup: true
   provider: releases
   api_key:
     secure: Tbmd8esauyevDI6H3b9NvWAIOAUm06/b5OKmvCS3ko9vytIEIhxs8MrvDteGZo6I551yDb7hq8Q3JPmbDt9dQtBi+dcoWSFbyrZFtjl9EGKgOO08XSdngqBp+ZfG34iAgdOpSfPFfsT5TfW2I9HkGwMdAZyxeAqO1FkOPTrawdesH6nqTxNcILLRdL1NZk7lnjKwMOuSOu5Mra9TwQ1oS2A7Qc+qn5vjino0kFOqPSlKN0b73sxAVWOxJxwfQQFOd0abl8p4Y4v/ia5CM8wzDjdsGqusdwusLv/ld18bckRIXE3zW8WW1hTMtzdD6NSSJgqt9PlOMV9iFgf++pTkXmRUFSug8en27y2YROcngaCKDVBXyh+Qv9kdUH0svryd/YHo+iRVfEwEQ94B3oRaIGhjuA/b3SIsBKJaHrUq8yOHJ4XD8S0h54aNSxbgTbEY4Z9KWl0cjrGZhGwGNgeWP6dGNZH/Rll5cfbPvlJ00jbuaJ3OeaYjPqq87BEAHbqFbrWtHM2ZwtqO05+qes15ojkJi4Ccb5a9aTqgvNlBIVZpVzOVqgRgK4CVOTSA7IzirzoX4eoULKqLNXLRE9RwsTUb+7EdGojGV7sgclni18z6yti3+hlX31aeTtwZAW7a6e1HfcGg+zVkzKKueAZqQEYXbpZ2Rd2ZXz8ZJsno+z0=
