@@ -7,7 +7,7 @@ AIT=./appimagetool-x86_64.AppImage
 AIT_URL=https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
 if [ -d $APPDIR ]; then
     echo Removing $APPDIR...
-    rm -rv $APPDIR
+    rm -rvf $APPDIR
 fi
 
 if [ ! -f $EXEC ]; then
