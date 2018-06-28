@@ -67,7 +67,7 @@ test {
 unix: CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-LIBS += `pkg-config --static --libs opencv`
+LIBS += `pkg-config --static --libs opencv fftw3f`
 
 DISTFILES += \
     simple.vsh \
