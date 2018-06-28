@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Holmos Viewer
+Comment=Analyse and display holographic images
+Exec=holmos-viewer
+Categories=Science;Education;
+Icon=holmos-viewer
