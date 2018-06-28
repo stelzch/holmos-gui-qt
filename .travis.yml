@@ -11,9 +11,9 @@ script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
 - "./build_appimage.sh"
 deploy:
-  provider: releases
-  api_key:
-    secure: phB2b9j/Y7kPTdNLpcxvr85xs092OQRW9FltDTpPcT77v7wu/cT28OQ34jMXdCw21gKO8dMD4ZixXTl/5Wia4w/t7erHji0tyyR3lm7TpXrPGnMXaiMtGMicrxhNzdUN3pzHNsnhO0B5RSxMLo4qTAYipL+0yAm1Y44rekV+XwBzATarPjv3gh1QFEdTI9OUdnl7rjbaQlhuLmTpjQmpPeOTaiu367oreMeNbqOcTleilVEmltVv8zRzHAdHoky9xve7aDuR1vSya79ZUqQRHxECzEWkkOdFiKEfX6pzp9zDzrE07xubJS5rJGJnOKVFQVqKAAr1MhT6/OwcMoNAuZAwUWxlaOJQ+oeoOCp1h6phz3XJ/ulA1gibqK4wkt4x/BcgN5lky8K1TxDbLTV86sRjZXnmN0QGU4klJ/Nl9Oh2GIDtXl0j+oCPm8lhJh4jwIK77AIh2/cIzw3QxCvirrpnUPchyzc9IMMvyW6MfMzMnSShJyBbp1K3ozNX8oXnRNRsDFG2qju0LufZ7/nlK9mCtWpgqcCuMAh6rYabbPfWnHCz3YROUGouXRb1LGwkboLUXK8cIHrBNvo5Pe7ZbLj/isW5X9+BZqYBZcwzeU0CRVnObtgtwSxx0vthHCf1mkuJHwcs4nv8D3AJET9t0s5ljT3Nwm72BYgQV4gbJLA=
-  file: Holmos_Viewer-x86_64.AppImage
-  on:
-    repo: holmos-frs/gui-qt
+    provider: pages
+    skip-cleanup: true
+    github-token: $GITHUB_TOKEN
+    keep-history: true
+    on:
+        branch: master
