@@ -50,7 +50,7 @@ private:
     QSettings settings;
     int n0, n1;
     MOpenGLWidget *threedViewer;
-    bool computeButtonRunning=false;
+    bool computeButtonRunning=false, threedEnabled=false;
 
 };
 

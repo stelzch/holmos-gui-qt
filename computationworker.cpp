@@ -184,7 +184,14 @@ void ComputationWorker::doWork() {
          * Grab the image from the cam server
          */
         emit statusMessage("Grabbing frame from camera");
-        Mat frame = ir.retrieve();
+        Mat frame;
+        try {
+            frame = ir.retrieve();
+        } catch(ImageRetrivalException *e) {
+            qDebug() << "Unable to request image";
+            emit computeRunningStateChanged(false);
+            break;
+        }
         extractChannel(frame, frame, 0); // Extract the red channel
         frame(cropRegion).convertTo(img, CV_32FC1, 1/1024.0); // Convert to floating point
 

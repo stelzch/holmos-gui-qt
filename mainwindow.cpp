@@ -21,14 +21,16 @@ MainWindow::MainWindow(QWidget *parent) :
         settings.setValue("satellite/rect_r", 0);
 
         settings.setValue("misc/settingsNew", false);
+        settings.setValue("misc/enable_3d", false);
         settings.sync();
     }
+
+    threedEnabled = settings.value("misc/enable_3d", false).value<bool>();
 
     ct = new ComputationWorker();
     ct->camUrl = settings.value("capture/camUrl", "http://127.0.0.1:3000").value<QString>();
 
     ct->moveToThread(&thread1);
-    //connect(&thread1, &QThread::finished, ct, &QObject::deleteLater);
     connect(&thread1, &QThread::started, ct, &ComputationWorker::doWork);
 
     connect(ct, SIGNAL(dimensionsChanged(int,int)), this, SLOT(dimensionsChanged(int,int)));
@@ -57,9 +59,11 @@ MainWindow::MainWindow(QWidget *parent) :
     /* Load slider positions from settings */
     // TODO: lspfs
 
-    threedViewer = new MOpenGLWidget();
-    ui->verticalLayout_4->addWidget(threedViewer);
-    connect(ui->heightScale, SIGNAL(valueChanged(int)), this, SLOT(sliderHeightChanged(int)));
+    if(threedEnabled) {
+        threedViewer = new MOpenGLWidget();
+        ui->verticalLayout_4->addWidget(threedViewer);
+        connect(ui->heightScale, SIGNAL(valueChanged(int)), this, SLOT(sliderHeightChanged(int)));
+    }
 
     /* Setup start/stop computation button */
     ui->mainToolBar->addAction(ui->actionCompute);
@@ -148,7 +152,8 @@ void MainWindow::magnitudeSpectrumReceived(QImage img) {
 void MainWindow::phaseAngleReceived(QImage img) {
     QImage conv = img.convertToFormat(QImage::Format_RGB888);
     phaseViewer.setImage(conv);
-    threedViewer->showImage(img.convertToFormat(QImage::Format_RGB888));
+    if(threedEnabled)
+        threedViewer->showImage(img.convertToFormat(QImage::Format_RGB888));
 }
 
 void MainWindow::dimensionsChanged(int width, int height) {
@@ -176,5 +181,6 @@ MainWindow::~MainWindow()
     thread1.wait();
     delete ui;
     delete ct;
-    delete threedViewer;
+    if(threedEnabled)
+        delete threedViewer;
 }
