@@ -10,12 +10,6 @@ before_install:
 script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
 - "./build_appimage.sh"
-deploy:
-  provider: releases
-  user: "stelzch"
-  file: "Holmos_Viewer-x86_64.AppImage"
-  skip_cleanup: true
-  on:
-      tags: true
-  password:
-    secure: IUYdGT61CLe5Dc0/H+SfUWh9p4kSbpIXdpGbJ5bHe6VZEqLBizmkb22ZBcFLeJokJP9sXoR6jmdu7PyYG2ixiHTGPqbi1rYm9JQhKARj3JNkdep4F7aEqVwHjzwO+KkGvwnDXw5k2+BI0xz14siJH7VMj7g2thAQfl34kUwjM/EymRgInKCiiAYLMBfre6FhYqamsfianU/jK+3I9kaRQc0mm3Vdb62nec4qE2nYc/zfZgBUXu5J5vZnOeR9sdzLRSDtEjzgJkx8P7eLdOxHH25GiTTr2YPkrWkDr9zU71Ot6+/jFlKu5b2ZHUnssnrv9rtnWPErNzzWQPADADb4Y024DdTH9mHmoujokA/Fi5+WZ+9t7dCCeg/rC0Lc2QFzX3/SwjpN7j3UKaPHGT0Mglk6plGnXPUAWlUfFMsK4fOoJ3s9S6rRnObFTaRfeDRhUKaZC1keSdpfClwiAmg11eTTQvzXh9YKwBrpxtxx5cbsgc7e9IHz20md0IonopSDCHxFj0PbNvicRo2Gw+PIh2uSNWgwuUHLHw96mfzQTdBNLlKK94wza8/PV4POkT+aZg5z3w/8VakuhjCG/YbNZAs47PJIdPjJfoGYBeRyv+Shuma4ZXYBSrfZBnX+pQkBkHqFoXa8WB2M/iboxzza6+H29De+8x/pSnlq9ZLm+Uk=
+
+after_success:
+- curl -T Holmos_Viewer-x86_64.AppImage --user $FTP_USER ftp://my.ch-st.de/holmos_viewer/Holmos_Viewer-x86_64-build$TRAVIS_BUILD_NUMBER.AppImage
