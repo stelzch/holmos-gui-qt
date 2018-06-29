@@ -10,10 +10,12 @@ before_install:
 script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
 - "./build_appimage.sh"
+- mkdir -p /tmp/uploadfiles && cp Holmos_Viewer-x86_64.AppImage /tmp/uploadfiles
 deploy:
     provider: pages
     skip-cleanup: true
     github-token: $GITHUB_TOKEN
     keep-history: true
+    local-dir: /tmp/uploadfiles
     on:
         branch: master
