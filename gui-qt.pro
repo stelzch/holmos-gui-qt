@@ -43,12 +43,6 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui \
     settingsdialog.ui
 
-QMAKE_LFLAGS = -fopenmp -lfftw3_threads -lfftw3f -lfftw3f_threads
-QMAKE_CXXFLAGS = -fopenmp -std=c++14
-
-DEFINES += DEBUG_PHONY_CAMERA
-PKGCONFIG += fftw3
-
 test {
     CONFIG += debug
     TARGET = gui-qt-tests
@@ -64,10 +58,10 @@ test {
 
 }
 
-unix: CONFIG += link_pkgconfig
+CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-LIBS += `pkg-config --static --libs opencv fftw3f`
+unix: LIBS += `pkg-config --static --libs opencv fftw3f`
 
 DISTFILES += \
     simple.vsh \

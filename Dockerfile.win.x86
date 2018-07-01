@@ -1,6 +1,6 @@
 FROM debian
 
-RUN apt update && apt-get install \
+RUN apt update && apt install -y \
     autoconf \
     automake \
     autopoint \
@@ -34,4 +34,8 @@ RUN apt update && apt-get install \
     wget \
     xz-utils
 
-RUN git clone https://github.com/mxe/mxe /tmp && cd /tmp && make && make install && rm -r /tmp
+RUN git clone https://github.com/mxe/mxe /opt/mxe && cd /opt/mxe
+RUN cd /opt/mxe && make MXE_GCC_THREADS=posix cc -j2 JOBS=4 &&  sed -i 's/-DWITH_QT=OFF/-DWITH_QT=OFF -DENABLE_CXX11=ON/g' /opt/mxe/src/opencv.mk && \
+        make fftw opencv qtbase --jobs=4 JOBS=2 && make clean-junk
+ENV PATH="$PATH:/opt/mxe/usr/bin"
+ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/mxe/usr/i686-w64-mingw32.static/qt5/lib/pkgconfig:/opt/mxe/usr/i686-w64-mingw32.static/lib/pkgconfig"
