@@ -12,4 +12,4 @@ script:
 - "./build_appimage.sh"
 
 after_success:
-- curl -T Holmos_Viewer-x86_64.AppImage --user $FTP_USER ftp://my.ch-st.de/holmos_viewer/Holmos_Viewer-x86_64-build$TRAVIS_BUILD_NUMBER.AppImage
+- curl -vvv -T $TRAVIS_BUILD_DIR/Holmos_Viewer-x86_64.AppImage --user $FTP_USER ftp://my.ch-st.de/holmos_viewer/Holmos_Viewer-x86_64-build$TRAVIS_BUILD_NUMBER.AppImage
