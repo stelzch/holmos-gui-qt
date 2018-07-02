@@ -16,7 +16,7 @@ script:
 after_success:
 - git clone https://github.com/holmos-frs/binaries.git /tmp/bins
 - cp Holmos_Viewer-x86_64.AppImage /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
-- cp gui-qt.exe /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
+- cp release/gui-qt.exe /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
 - cd /tmp/bins
 - git add Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
 - git add Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
