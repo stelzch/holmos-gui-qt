@@ -1,5 +1,5 @@
 FROM ubuntu:xenial
-RUN apt update && apt install -y pkg-config qt5-default libfftw3-dev wget cmake make build-essential libz-dev nano git
+RUN apt update && apt install -y pkg-config qt5-default libfftw3-dev wget cmake make build-essential libz-dev nano git qttools5-dev-tools
 WORKDIR /tmp
 COPY deps/install-opencv.sh /tmp/install-opencv.sh
 
@@ -8,4 +8,4 @@ RUN /tmp/install-opencv.sh && rm -rfv /tmp/*
 VOLUME ["/build"]
 
 WORKDIR /build
-CMD qmake . && make clean && make -j(nproc)
+CMD qmake . && make clean && make -j$(nproc) && sh ./build_appimage.sh

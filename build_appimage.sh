@@ -30,6 +30,8 @@ if [ ! -f $AIT ]; then
     wget -O $AIT $AIT_URL
     chmod +x $AIT
 fi
-
-$LDQT $APPDIR/usr/share/applications/holmos_viewer.desktop
-$AIT $APPDIR
+$LDQT --appimage-extract
+squashfs-root/AppRun $APPDIR/usr/share/applications/holmos_viewer.desktop
+rm -r squashfs-root
+$AIT --appimage-extract
+ARCH=x86_64 squashfs-root/AppRun $APPDIR
