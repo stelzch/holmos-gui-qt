@@ -2,7 +2,7 @@
 
 BINARY=$1
 
-rm -r tmp
+rm -fr tmp
 mkdir tmp
 mkdir -p tmp/usr/bin
 cp $BINARY tmp/usr/bin/holmos-viewer
@@ -24,7 +24,7 @@ Description: Imaging Program for the HolMOS project
 Installed-Size: $INSTALLED_SIZE
 EOF
 
-rm md5sums
+rm -f md5sums
 touch md5sums
 find usr -type f -exec md5sum {} >> md5sums +
 
@@ -35,4 +35,6 @@ echo "2.0\n" > debian-binary
 
 ar r holmos-viewer.deb debian-binary control.tar.gz data.tar.gz
 mv holmos-viewer.deb ..
-rm -r tmp
+cd ..
+rm -rf tmp
+exit 0
