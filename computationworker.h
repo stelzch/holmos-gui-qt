@@ -24,12 +24,9 @@ public:
     explicit ComputationWorker(QObject *parent = 0);
     void doWork();
     void fftshift(cv::Mat);
-    void multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
-    void multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
-    void divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
-    void divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
-
-    QImage asQImage(cv::Mat);
+    template<typename T> void multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    template<typename T> void divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out);
+    template<typename T> QImage asQImage(cv::Mat);
     bool shouldStop;
     int rectX, rectY, rectR;
     bool shouldUnwrapPhase;

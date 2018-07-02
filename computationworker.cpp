@@ -8,6 +8,7 @@ using namespace cv;
 using namespace std;
 
 typedef Point2f ComplexPixel;
+typedef Point2d ComplexPixelDouble;
 
 ComputationWorker::ComputationWorker(QObject *parent) : QObject(parent), shouldStop(false), shouldUnwrapPhase(false)
 {
@@ -34,11 +35,11 @@ void ComputationWorker::fftshift(Mat img) {
         tmp.copyTo(q4);
 
 }
-QImage ComputationWorker::asQImage(Mat img) {
-    assert(img.type() == CV_32FC1);
+template<typename T> QImage ComputationWorker::asQImage(Mat img) {
+    assert(img.type() == CV_32FC1 || img.type() == CV_64FC1);
     QImage image(img.cols, img.rows, QImage::Format_RGB888);
 
-    img.forEach<float>([&image, &img](float &p, const int position[]) -> void {
+    img.forEach<T>([&image, &img](T &p, const int position[]) -> void {
             image.bits()[3*(img.cols * position[0] + position[1])+0] = floor(p*255.0);
             image.bits()[3*(img.cols * position[0] + position[1])+1] = floor(p*255.0);
             image.bits()[3*(img.cols * position[0] + position[1])+2] = floor(p*255.0);
@@ -46,58 +47,32 @@ QImage ComputationWorker::asQImage(Mat img) {
 
     return image;
 }
-void ComputationWorker::multiplyComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
-    assert(input.type() == CV_32FC2);
-    assert(out.type() == CV_32FC2);
-    assert(factor.type() == CV_32FC2);
 
-    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
-        ComplexPixel i = input.at<ComplexPixel>(pos[0], pos[1]);
-        ComplexPixel f = factor.at<ComplexPixel>(pos[0], pos[1]);
-        p.x = i.x*f.x - i.y*f.y;
-        p.y = i.x*f.y + i.x*f.x;
-    });
-}
+template<typename T> void ComputationWorker::multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    assert(input.type() == CV_32FC2 || input.type() == CV_64FC2);
+    assert(out.type() == CV_32FC2 || out.type() == CV_64FC2);
+    assert(factor.type() == CV_32FC1 || factor.type() == CV_64FC1);
 
-void ComputationWorker::multiplyReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
-    assert(input.type() == CV_32FC2);
-    assert(out.type() == CV_32FC2);
-    assert(factor.type() == CV_32FC1);
-
-    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
-        float fac = factor.at<float>(pos[0], pos[1]);
-        ComplexPixel inp = input.at<ComplexPixel>(pos[0], pos[1]);
+    out.forEach<Point_<T>>([&input, &factor](Point_<T> &p, const int pos[]) -> void {
+        T fac = factor.at<T>(pos[0], pos[1]);
+        Point_<T> inp = input.at<Point_<T>>(pos[0], pos[1]);
         p.x = inp.x * fac;
         p.y = inp.y * fac;
     });    
 }
 
-void ComputationWorker::divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
-    assert(input.type() == CV_32FC2);
-    assert(out.type() == CV_32FC2);
-    assert(factor.type() == CV_32FC1);
+template<typename T>void ComputationWorker::divideReal(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
+    assert(input.type() == CV_32FC2 || input.type() == CV_64FC2);
+    assert(out.type() == CV_32FC2 || out.type() == CV_64FC2);
+    assert(factor.type() == CV_32FC1 || factor.type() == CV_64FC1);
 
-    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
-        float fac = factor.at<float>(pos[0], pos[1]);
-        ComplexPixel inp = input.at<ComplexPixel>(pos[0], pos[1]);
+    out.forEach<Point_<T>>([&input, &factor](Point_<T> &p, const int pos[]) -> void {
+        T fac = factor.at<T>(pos[0], pos[1]);
+        Point_<T> inp = input.at<Point_<T>>(pos[0], pos[1]);
         p.x = inp.x / fac;
         p.y = inp.y / fac;
     });    
 }
-
-void ComputationWorker::divideComplex(cv::Mat& input, cv::Mat& factor, cv::Mat& out) {
-    assert(input.type() == CV_32FC2);
-    assert(out.type() == CV_32FC2);
-    assert(factor.type() == CV_32FC2);
-
-    out.forEach<ComplexPixel>([&input, &factor](ComplexPixel &p, const int pos[]) -> void {
-        ComplexPixel i = input.at<ComplexPixel>(pos[0], pos[1]);
-        ComplexPixel f = factor.at<ComplexPixel>(pos[0], pos[1]);
-        p.x = (i.x*f.x - i.y) / (f.x*f.x+f.y*f.y);
-        p.y = (-i.x*f.y + i.y*f.y) / (f.x*f.x+f.y*f.y);
-    });
-}
-
 
 void ComputationWorker::doWork() {
     emit computeRunningStateChanged(true);
@@ -208,7 +183,7 @@ void ComputationWorker::doWork() {
         extractChannel(frame, frame, 0); // Extract the red channel
         frame(cropRegion).convertTo(img, CV_32FC1, 1/1024.0); // Convert to floating point
 
-        emit cameraImageReady(asQImage(img));
+        emit cameraImageReady(asQImage<float>(img));
 
         /* =======================================
          * STEP 2
@@ -229,7 +204,7 @@ void ComputationWorker::doWork() {
 
 
         qDebug() << "Calc finished";
-        emit magnitudeSpectrumReady(asQImage(magnitudeSpectrum));
+        emit magnitudeSpectrumReady(asQImage<float>(magnitudeSpectrum));
         qDebug() << "Magnitude Spectrum emitted";
 
         /* =========================================
@@ -264,7 +239,7 @@ void ComputationWorker::doWork() {
         if(!shouldUnwrapPhase) {
             // If we do not need to unwrap the phase, we're done here
             normalize(phaseAngle, phaseAngleNorm, 0, 1.0, NORM_MINMAX);
-            emit phaseAngleReady(asQImage(phaseAngleNorm));
+            emit phaseAngleReady(asQImage<float>(phaseAngleNorm));
         } else {
 
             /* ================================
@@ -302,15 +277,15 @@ void ComputationWorker::doWork() {
 
             // Compute various ffts
             dft(holo_sin_real, holo_sin, DFT_COMPLEX_OUTPUT);
-            multiplyReal(holo_sin, r2s_real, holo_sin);
+            multiplyReal<float>(holo_sin, r2s_real, holo_sin);
             dft(holo_sin, holo_sin, DFT_INVERSE);
-            multiplyReal(holo_sin, holo_cos_real, holo_sin);
+            multiplyReal<float>(holo_sin, holo_cos_real, holo_sin);
 
 
             dft(holo_cos_real, holo_cos, DFT_COMPLEX_OUTPUT);
-            multiplyReal(holo_cos, r2s_real, holo_cos);
+            multiplyReal<float>(holo_cos, r2s_real, holo_cos);
             dft(holo_cos, holo_cos, DFT_INVERSE);
-            multiplyReal(holo_cos, holo_sin_real, holo_cos);
+            multiplyReal<float>(holo_cos, holo_sin_real, holo_cos);
             qDebug() << "Cosine multiplied";
 
             qDebug() << holo_sin.at<ComplexPixel>(20, 20).x;
@@ -320,7 +295,7 @@ void ComputationWorker::doWork() {
             qDebug() << "Final pass";
             buffer1 = holo_sin - holo_cos;
             dft(buffer1, buffer1);
-            divideReal(buffer1, r2s_real, buffer1);
+            divideReal<float>(buffer1, r2s_real, buffer1);
             dft(buffer1, buffer1, DFT_INVERSE);
 
             phi_prime.forEach<float>([&buffer1](float &p, const int pos[]) -> void {
@@ -334,7 +309,7 @@ void ComputationWorker::doWork() {
                     p = (phase + 2*M_PI*round((phi-phase) / 2 / M_PI));
             });
             normalize(unwrapped_phase, unwrapped_phase, 0, 1, CV_MINMAX);
-            emit phaseAngleReady(asQImage(unwrapped_phase));
+            emit phaseAngleReady(asQImage<float>(unwrapped_phase));
         }
 
 
