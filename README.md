@@ -1,4 +1,5 @@
-# gui-qt
+# gui-qt 
+![](https://api.travis-ci.com/holmos-frs/gui-qt.svg?branch=master)
 Eine Qt-basierte GUI-Anwendung zur Auswertung von holographisch-mikroskopischer Aufnahmen.
 
 ## Installation
