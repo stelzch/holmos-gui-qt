@@ -61,9 +61,9 @@ test {
 CONFIG += link_pkgconfig
 CONFIG += c++14
 CONFIG += testcase
-unix: LIBS += `pkg-config --static --libs opencv fftw3f`
-unix: QMAKE_CXXFLAGS += -fopenmp
-unix: QMAKE_LFLAGS += -fopenmp
+LIBS += `pkg-config --static --libs opencv fftw3f`
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS += -fopenmp
 DISTFILES += \
     simple.vsh \
     simple.fsh \
