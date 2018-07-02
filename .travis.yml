@@ -8,14 +8,18 @@ before_install:
 - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
 - docker pull cstelz/holmos-build-x86
 - docker pull cstelz/holmos-build-x86-win
+- docker pull cstelz/holmos-build-arm
 script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86-win
+- docker run --rm --privileged multiarch/qemu-user-static:register --reset
+- docker run -itv $(pwd):/build cstelz/holmos-build-arm
 
 after_success:
 - mkdir out
 - cp Holmos_Viewer-x86_64.AppImage out/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
 - cp release/gui-qt.exe out/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
+- cp holmos-viewer.deb out/Holmos_Viewer-build$TRAVIS_BUILD_NUMER-arm.deb
 - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
 - bash upload.sh out/*
 
