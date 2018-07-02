@@ -7,14 +7,18 @@ before_install:
 - git config --local user.email "mail@ch-st.de"
 - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
 - docker pull cstelz/holmos-build-x86
+- docker pull cstelz/holmos-build-x86-win
 script:
 - docker run -itv $(pwd):/build cstelz/holmos-build-x86
+- docker run -itv $(pwd):/build cstelz/holmos-build-x86-win
 - "./build_appimage.sh"
 
 after_success:
 - git clone https://github.com/holmos-frs/binaries.git /tmp/bins
 - cp Holmos_Viewer-x86_64.AppImage /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
+- cp gui-qt.exe /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
 - cd /tmp/bins
 - git add Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
+- git add Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.exe
 - git commit -m "Build Nr. $TRAVIS_BUILD_NUMBER"
 - git push https://$GITHUB_TOKEN@github.com/holmos-frs/binaries.git --all
