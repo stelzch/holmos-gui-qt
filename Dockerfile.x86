@@ -8,4 +8,4 @@ RUN /tmp/install-opencv.sh && rm -rfv /tmp/*
 VOLUME ["/build"]
 
 WORKDIR /build
-CMD qmake . && make -j4 
+CMD qmake . && make clean && make -j(nproc)
