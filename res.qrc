@@ -3,4 +3,7 @@
         <file>simple.fsh</file>
         <file>simple.vsh</file>
     </qresource>
+    <qresource prefix="/translations">
+        <file>langs/german.qm</file>
+    </qresource>
 </RCC>

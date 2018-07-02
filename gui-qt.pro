@@ -71,3 +71,5 @@ DISTFILES += \
 
 RESOURCES += \
     res.qrc
+
+TRANSLATIONS = langs/german.ts

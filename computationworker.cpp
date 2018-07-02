@@ -106,7 +106,7 @@ void ComputationWorker::doWork() {
     int cropX = settings.value("capture/cropX", -1).value<int>();
     int cropY = settings.value("capture/cropY", -1).value<int>();
 
-    emit statusMessage("Initializing buffers and fetching test image");
+    emit statusMessage(tr("Initializing buffers and fetching test image"));
     qDebug() << "Starting ComputationWorker with CamURL: " << camUrl;
     ImageRetriever ir(camUrl);
 
@@ -186,7 +186,7 @@ void ComputationWorker::doWork() {
          * error message otherwise
          */
         if((rectX + rectR) > t.cols || (rectY + rectR) > t.rows) {
-            emit statusMessage("[ERROR] The specified rectangle is outside of the image");
+            emit statusMessage(tr("[ERROR] The specified rectangle is outside of the image"));
             break;
         }
 
@@ -195,14 +195,14 @@ void ComputationWorker::doWork() {
          * ===================================
          * Grab the image from the cam server
          */
-        emit statusMessage("Grabbing frame from camera");
+        emit statusMessage(tr("Grabbing frame from camera"));
         Mat frame;
         try {
             frame = ir.retrieve();
         } catch(ImageRetrivalException *e) {
             qDebug() << "Unable to request image";
             emit computeRunningStateChanged(false);
-            emit statusMessage("[ERROR] Could not retrieve image from camera server!");
+            emit statusMessage(tr("[ERROR] Could not retrieve image from camera server!"));
             break;
         }
         extractChannel(frame, frame, 0); // Extract the red channel
@@ -215,7 +215,7 @@ void ComputationWorker::doWork() {
          * =======================================
          * Calculate the fourier magnitude spectrum
          */
-        emit statusMessage("Calculating fourier transform");
+        emit statusMessage(tr("Calculating fourier transform"));
 
         // Perform a discrete fourier transform
         dft(img, fourierTransform, DFT_COMPLEX_OUTPUT);
@@ -237,7 +237,7 @@ void ComputationWorker::doWork() {
          * =========================================
          * Extract satellite and compute phase angle
          */
-        emit statusMessage("Calculating phase angle");
+        emit statusMessage(tr("Calculating phase angle"));
         qDebug() << rectX << rectY << rectR;
         // Reset the cropped array to 0
         cropped.forEach<ComplexPixel>([](ComplexPixel &p, const int pos[]) -> void {
@@ -272,7 +272,7 @@ void ComputationWorker::doWork() {
              * ================================
              * Unwrap the phase
              */
-            emit statusMessage("Unwrapping phase angle");
+            emit statusMessage(tr("Unwrapping phase angle"));
             // Mirror the phaseAngle-matrix on the bottom x-axis, and then again on the y-axis
             for(int y=0; y<n0; y++) {
                 for(int x=0; x<n1; x++) {

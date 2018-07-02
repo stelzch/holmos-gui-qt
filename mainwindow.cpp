@@ -231,7 +231,7 @@ MainWindow::~MainWindow()
 
 
     deleteComputation();
-    delete ui;
     if(threedEnabled)
         delete threedViewer;
+    delete ui;
 }
