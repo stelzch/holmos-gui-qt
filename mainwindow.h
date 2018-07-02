@@ -43,14 +43,17 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    ComputationWorker *ct;
-    QThread thread1;
+    ComputationWorker *ct=nullptr;
+    QThread *thread1=nullptr;
     ImageSelect satelliteSelector;
     ScaledImageView cameraViewer, phaseViewer;
     QSettings settings;
     int n0, n1;
     MOpenGLWidget *threedViewer;
     bool computeButtonRunning=false, threedEnabled=false;
+
+    void initComputation();
+    void deleteComputation();
 
 };
 

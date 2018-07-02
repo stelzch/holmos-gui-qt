@@ -128,6 +128,7 @@ void ComputationWorker::doWork() {
         // Something went wrong, just take the easy way out for now...
         qDebug() << "Unable to request image";
         emit computeRunningStateChanged(false);
+        emit statusMessage("[ERROR] Could not retrieve image from camera server!");
         return;
     }
 
@@ -179,6 +180,17 @@ void ComputationWorker::doWork() {
 
     while(!shouldStop) {
         /* ===================================
+         * PREPARATION
+         * ===================================
+         * Check if the rect specification lies within our image bounds, emit
+         * error message otherwise
+         */
+        if((rectX + rectR) > t.cols || (rectY + rectR) > t.rows) {
+            emit statusMessage("[ERROR] The specified rectangle is outside of the image");
+            break;
+        }
+
+        /* ===================================
          * STEP 1
          * ===================================
          * Grab the image from the cam server
@@ -190,6 +202,7 @@ void ComputationWorker::doWork() {
         } catch(ImageRetrivalException *e) {
             qDebug() << "Unable to request image";
             emit computeRunningStateChanged(false);
+            emit statusMessage("[ERROR] Could not retrieve image from camera server!");
             break;
         }
         extractChannel(frame, frame, 0); // Extract the red channel

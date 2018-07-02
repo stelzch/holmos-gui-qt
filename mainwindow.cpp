@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QToolBar>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -25,20 +26,10 @@ MainWindow::MainWindow(QWidget *parent) :
         settings.sync();
     }
 
+    // Start the computation worker in the background
+    initComputation();
+
     threedEnabled = settings.value("misc/enable_3d", false).value<bool>();
-
-    ct = new ComputationWorker();
-    ct->camUrl = settings.value("capture/camUrl", "http://127.0.0.1:3000").value<QString>();
-
-    ct->moveToThread(&thread1);
-    connect(&thread1, &QThread::started, ct, &ComputationWorker::doWork);
-
-    connect(ct, SIGNAL(dimensionsChanged(int,int)), this, SLOT(dimensionsChanged(int,int)));
-    connect(ct, SIGNAL(statusMessage(QString)), this, SLOT(computationStatusMessage(QString)));
-
-    connect(ct, SIGNAL(cameraImageReady(QImage)), this, SLOT(cameraImageReceived(QImage)));
-    connect(ct, SIGNAL(magnitudeSpectrumReady(QImage)), this, SLOT(magnitudeSpectrumReceived(QImage)));
-    connect(ct, SIGNAL(phaseAngleReady(QImage)), this, SLOT(phaseAngleReceived(QImage)));
 
     connect(ui->sliderRectX, SIGNAL(valueChanged(int)), this, SLOT(sliderRectXChanged(int)));
     connect(ui->sliderRectY, SIGNAL(valueChanged(int)), this, SLOT(sliderRectYChanged(int)));
@@ -50,14 +41,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->actionSettings, SIGNAL(triggered(bool)), this, SLOT(actionSettingsPressed(bool)));
 
-
-
     ui->scrollAreaTab1->setWidget(&cameraViewer);
     ui->scrollAreaTab2->setWidget(&satelliteSelector);
     ui->scrollArea_3->setWidget(&phaseViewer);
-
-    /* Load slider positions from settings */
-    // TODO: lspfs
 
     if(threedEnabled) {
         threedViewer = new MOpenGLWidget();
@@ -69,13 +55,69 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainToolBar->addAction(ui->actionCompute);
     ui->actionCompute->setIcon(QIcon::fromTheme("media-playback-start-symbolic"));
     connect(ui->actionCompute, SIGNAL(triggered(bool)), this, SLOT(computeButtonPressed()));
-    connect(ct, SIGNAL(computeRunningStateChanged(bool)), this, SLOT(computeRunningState(bool)));
-
 }
 
+void MainWindow::initComputation(void) {
+    deleteComputation();
+
+    thread1 = new QThread();
+    ct = new ComputationWorker();
+
+    // Make the computations in a seperate thread to avoid GUI blocking
+    ct->moveToThread(thread1);
+    connect(thread1, &QThread::started, ct, &ComputationWorker::doWork);
+
+    // Load satellite position and camera server url from settings
+    ct->camUrl = settings.value("capture/camUrl", "http://127.0.0.1:3000").value<QString>();
+    ct->rectX = settings.value("satellite/rect_x", 0).toInt();
+    ct->rectY = settings.value("satellite/rect_y", 0).toInt();
+    ct->rectR = settings.value("satellite/rect_r", 0).toInt();
+
+    // Connect the computationRunningStateChanged signal to inform the GUI
+    // about changes and errors in the computation worker
+    connect(ct, SIGNAL(computeRunningStateChanged(bool)), this, SLOT(computeRunningState(bool)));
+
+    // Connect the slots of various results produced in the computation worker
+    // with the GUI functions that display them accordingly
+    connect(ct, SIGNAL(dimensionsChanged(int,int)), this, SLOT(dimensionsChanged(int,int)));
+    connect(ct, SIGNAL(statusMessage(QString)), this, SLOT(computationStatusMessage(QString)));
+
+    connect(ct, SIGNAL(cameraImageReady(QImage)), this, SLOT(cameraImageReceived(QImage)));
+    connect(ct, SIGNAL(magnitudeSpectrumReady(QImage)), this, SLOT(magnitudeSpectrumReceived(QImage)));
+    connect(ct, SIGNAL(phaseAngleReady(QImage)), this, SLOT(phaseAngleReceived(QImage)));
+
+
+    thread1->start();
+}
+void MainWindow::deleteComputation(void) {
+    if(ct != nullptr) {
+        ct->shouldStop = true;
+        if(thread1 != nullptr) {
+            thread1->quit();
+            thread1->wait();
+        }
+    }
+    delete ct;
+    delete thread1;
+
+    ct = nullptr;
+    thread1 = nullptr;
+}
+
+
+/**
+ * The Settings-Button was pressed. Stop the computation, display the settings
+ * dialog. The user might adjust the crop region that the ComputationWorker processes
+ * or the URL of the camera server might change, so we need to reinitiate the
+ * ComputationWorker afterwards, to ensure the new settings are used accordingly.
+ */
 void MainWindow::actionSettingsPressed(bool) {
+    deleteComputation();
+
     SettingsDialog d(this);
     d.exec();
+
+    initComputation();
 }
 
 void MainWindow::computeButtonPressed() {
@@ -83,14 +125,11 @@ void MainWindow::computeButtonPressed() {
     if(!computeButtonRunning) {
         // Button displays start, should start ct
         qDebug() << "Requested ct start";
-        ct->shouldStop = false;
-        thread1.start();
+        initComputation();
     } else {
         // Button displays stop, should stop ct
         qDebug() << "Requested ct stop";
-        ct->shouldStop = true;
-        thread1.quit();
-        thread1.wait();
+        deleteComputation();
     }
 
 }
@@ -111,16 +150,22 @@ void MainWindow::computeRunningState(bool running) {
 }
 
 void MainWindow::sliderRectXChanged(int newval) {
-    ct->rectX = ui->sliderRectX->value();
-    satelliteSelector.updateXPos(newval);
+    if(ct != nullptr) {
+        ct->rectX = ui->sliderRectX->value();
+        satelliteSelector.updateXPos(newval);
+    }
 }
 void MainWindow::sliderRectYChanged(int newval) {
-    ct->rectY = ui->sliderRectY->value();
-    satelliteSelector.updateYPos(newval);
+    if(ct != nullptr) {
+        ct->rectY = ui->sliderRectY->value();
+        satelliteSelector.updateYPos(newval);
+    }
 }
 void MainWindow::sliderRectRChanged(int newval) {
-    ct->rectR = ui->sliderRectR->value();
-    satelliteSelector.setIndicatorRadius(newval);
+    if(ct != nullptr) {
+        ct->rectR = ui->sliderRectR->value();
+        satelliteSelector.setIndicatorRadius(newval);
+    }
 }
 
 void MainWindow::sliderHeightChanged(int val) {
@@ -130,7 +175,9 @@ void MainWindow::sliderHeightChanged(int val) {
 }
 
 void MainWindow::phaseUnwrapCheckChanged(int newval) {
-    ct->shouldUnwrapPhase = newval;
+    if(ct != nullptr) {
+        ct->shouldUnwrapPhase = newval;
+    }
 }
 
 void MainWindow::satellitePointSelected(QPoint p) {
@@ -164,6 +211,11 @@ void MainWindow::dimensionsChanged(int width, int height) {
 }
 
 void MainWindow::computationStatusMessage(QString str) {
+    if(str.startsWith("[ERROR]")) {
+        QMessageBox mb;
+        mb.critical(0, "Error", str);
+        return;
+    }
     ui->statusBar->showMessage(str);
 }
 
@@ -176,11 +228,10 @@ MainWindow::~MainWindow()
     settings.setValue("satellite/rect_r", ct->rectR);
     settings.sync();
     qDebug() << "Settings written";
-    ct->shouldStop = true;
-    thread1.quit();
-    thread1.wait();
+
+
+    deleteComputation();
     delete ui;
-    delete ct;
     if(threedEnabled)
         delete threedViewer;
 }
