@@ -15,5 +15,6 @@ after_success:
 - git clone https://github.com/holmos-frs/binaries.git /tmp/bins
 - cp Holmos_Viewer-x86_64.AppImage /tmp/bins/Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
 - cd /tmp/bins
+- git add Holmos_Viewer-build$TRAVIS_BUILD_NUMBER-x86_64.AppImage
 - git commit -m "Build Nr. $TRAVIS_BUILD_NUMBER"
 - git push https://$GITHUB_TOKEN@github.com/holmos-frs/binaries.git --all
