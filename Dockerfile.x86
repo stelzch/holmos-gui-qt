@@ -4,6 +4,7 @@ WORKDIR /tmp
 COPY deps/install-opencv.sh /tmp/install-opencv.sh
 
 RUN /tmp/install-opencv.sh && rm -rfv /tmp/*
+RUN apt install -y file
 
 VOLUME ["/build"]
 

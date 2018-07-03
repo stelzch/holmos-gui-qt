@@ -3,8 +3,6 @@ APPDIR=Holmos_Viewer-x86_64.AppDir
 EXEC=gui-qt
 LDQT=./linuxdeployqt
 LDQT_URL=https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-AIT=./appimagetool-x86_64.AppImage
-AIT_URL=https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
 if [ -d $APPDIR ]; then
     echo Removing $APPDIR...
     rm -rvf $APPDIR
@@ -26,12 +24,7 @@ if [ ! -f $LDQT ]; then
     chmod +x $LDQT
 fi
 
-if [ ! -f $AIT ]; then
-    wget -O $AIT $AIT_URL
-    chmod +x $AIT
-fi
 $LDQT --appimage-extract
-squashfs-root/AppRun $APPDIR/usr/share/applications/holmos_viewer.desktop
+ARCH=x86_64 squashfs-root/AppRun $APPDIR/usr/share/applications/holmos_viewer.desktop -appimage -bundle-non-qt-libs
 rm -r squashfs-root
-$AIT --appimage-extract
-ARCH=x86_64 squashfs-root/AppRun $APPDIR
+exit 0
