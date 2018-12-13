@@ -12,7 +12,7 @@ Das Programm hat mehrere Abhängigkeiten:
 Um Qt und fftw auf einem Raspberry mit raspbian zu installieren, einfach folgende Kommandos ausführen:
 ```
 sudo apt update && \
-sudo apt install qt5-default qmake libfftw3-dev
+sudo apt install qt5-default qt5-qmake libfftw3-dev
 ```
 
 Es gibt auch ein OpenCV-Build in den offiziellen Repos von Raspbian, allerdings ist diese Version vergleichsweise alt und unterstützt kein C++11, weshalb für gui-qt eine aktuellere OpenCV-Version installiert werden muss.
