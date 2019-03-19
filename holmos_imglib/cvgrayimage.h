@@ -23,6 +23,24 @@ public:
      */
     CvGrayImage(int height, int width);
 
+    /**
+     * @return the value at the given coordinates
+     */
+    floatp getAt(int y, int x);
+
+    /**
+     * @brief Run the lambda on each pixel and set its value accordingly
+     * @param functor the lambda to run
+     */
+    void forEach(std::function<floatp (int, int)>functor);
+
+    /**
+     * @brief initialize the image with a given value
+     */
+    void initValue(floatp val);
+
+    cv::Mat *getMat();
+
     virtual ~CvGrayImage();
 protected:
     int width, height;
