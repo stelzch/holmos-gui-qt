@@ -1,6 +1,6 @@
 #!/bin/sh
 APPDIR=Holmos_Viewer-x86_64.AppDir
-EXEC=gui-qt
+EXEC=holmos_viewer
 LDQT=./linuxdeployqt
 LDQT_URL=https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
 if [ -d $APPDIR ]; then
@@ -8,14 +8,15 @@ if [ -d $APPDIR ]; then
     rm -rvf $APPDIR
 fi
 
-if [ ! -f $EXEC ]; then
+if [ ! -f holmos_viewer/$EXEC ]; then
     echo You must build gui-qt first...
     exit -1
 fi
 
+
 mkdir -p $APPDIR/usr/share/applications $APPDIR/usr/share/icons/hicolor/256x256/apps $APPDIR/usr/bin
 cp holmos_viewer.desktop $APPDIR/usr/share/applications
-cp gui-qt $APPDIR/usr/bin/holmos-viewer
+cp holmos_viewer/$EXEC $APPDIR/usr/bin/holmos-viewer
 cp icon.png $APPDIR/usr/share/icons/hicolor/256x256/apps/holmosviewer.png
 cp icon.png $APPDIR/holmos-viewer.png
 

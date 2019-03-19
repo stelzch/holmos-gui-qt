@@ -51,7 +51,7 @@ test {
     message(Configuring test build...)
     SOURCES += test/testmimage.cpp
 } else {
-    TARGET = gui-qt
+    TARGET = holmos_viewer
     TEMPLATE = app
     message(Normal build...)
     SOURCES += main.cpp
