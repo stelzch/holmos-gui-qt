@@ -18,7 +18,7 @@ DEPENDPATH += $$PWD/../holmos_imglib
 
 unix:!macx: PRE_TARGETDEPS += $$OUT_PWD/../holmos_imglib/libholmos_imglib.a
 
-LIBS += `pkg-config --static --libs opencv`
+LIBS += `PKG_CONFIG_PATH=/usr/local/lib64/pkgconfig pkg-config --static --libs opencv`
 CONFIG += c++14
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp
