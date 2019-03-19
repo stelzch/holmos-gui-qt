@@ -60,7 +60,6 @@ test {
 
 CONFIG += link_pkgconfig
 CONFIG += c++14
-CONFIG += testcase
 LIBS += `pkg-config --static --libs opencv fftw3f`
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp

@@ -16,7 +16,7 @@ cmake -D BUILD_SHARED_LIBS=OFF -D WITH_OPENMP=ON \
     -D BUILD_opencv_java_bindings_gen=OFF -D BUILD_opencv_js=OFF \
     -D BUILD_opencv_ml=OFF -D BUILD_opencv_objdetect=OFF \
     -D BUILD_opencv_stitching=OFF -D BUILD_opencv_superres=OFF \
-    -D BUILD_opencv_ts=OFF -D ENABLE_CXX11=ON \
+    -D BUILD_opencv_ts=OFF -D BUILD_opencv_imgproc=OFF -D BUILD_opencv_viz=OFF -D ENABLE_CXX11=ON \
     ../opencv-$VERSION
 
 make -j$(nproc)
