@@ -6,6 +6,8 @@ TEMPLATE = lib
 TARGET = holmos_imglib
 INCLUDEPATH += .
 
+QT += gui
+
 # The following define makes your compiler warn you if you use any
 # feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -22,7 +24,7 @@ CONFIG += staticlib
 HEADERS += cvgrayimage.h holmos_imglib_global.h
 SOURCES += cvgrayimage.cpp
 
-LIBS += `pkg-config --static --libs opencv`
+LIBS += `pkg-config --with-path /usr/local/lib64/pkgconfig --static --libs opencv`
 CONFIG += c++14
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp

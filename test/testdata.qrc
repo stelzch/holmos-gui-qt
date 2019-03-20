@@ -1,2 +1,5 @@
-<!DOCTYPE RCC>
-<RCC version="1.0"/>
+<RCC>
+    <qresource>
+        <file alias="holmos_raw.png">testdata/holmos_raw.png</file>
+    </qresource>
+</RCC>

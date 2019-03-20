@@ -20,7 +20,12 @@ private slots:
     void benchR2SCreation();
     void benchInitValue();
     void testCreation();
+    void testNormalization();
+    void testFloatArr();
+    void testQImageImport();
 
+private:
+    bool floatpEqual(floatp expected, floatp actual);
 };
 
 TestImgLib::TestImgLib()
@@ -31,6 +36,10 @@ TestImgLib::TestImgLib()
 TestImgLib::~TestImgLib()
 {
 
+}
+
+bool TestImgLib::floatpEqual(floatp expected, floatp actual) {
+    return (std::abs(expected - actual) < 1e-6);
 }
 
 void TestImgLib::test_case1()
@@ -106,6 +115,49 @@ void TestImgLib::benchInitValue() {
         CvGrayImage img(2048, 2048);
         img.initValue(0.0);
     }
+}
+
+void TestImgLib::testNormalization() {
+    CvGrayImage img(1024, 1024);
+
+    img.forEach([] (int y, int x) {
+        return (y % 2 == 0) ? 24.0 : -24.0;
+    });
+    img.getFloatpArr()[0] = 0.0;
+    img.normalize();
+
+    QVERIFY(floatpEqual(img.getAt(200, 0), 1.0));
+    QVERIFY(floatpEqual(img.getAt(201, 20), 0.0));
+    QVERIFY(floatpEqual(img.getAt(0, 0), 0.5));
+}
+
+void TestImgLib::testFloatArr() {
+    const int n0 = 1024;
+    const int n1 = 1024;
+    CvGrayImage img(n0, n1);
+
+    img.forEach([] (int y, int x) {
+        return y / (x+2.0);
+    });
+
+    floatp *arr = img.getFloatpArr();
+    for (int y = 0; y < n0; y++) {
+        for (int x = 0; x < n1; x++) {
+            floatp arrVal = arr[y * n0 + x];
+            floatp atVal = img.getAt(y, x);
+
+            QVERIFY(floatpEqual(arrVal, atVal));
+        }
+    }
+}
+
+void TestImgLib::testQImageImport() {
+    Q_INIT_RESOURCE(testdata);
+
+    QImage qimg("testdata/holmos_raw.png");
+    CvGrayImage img = CvGrayImage::fromQImage(qimg);
+
+    QVERIFY(floatpEqual(img.getAt(500, 200), qRed(qimg.pixel(200, 500))));
 }
 
 QTEST_APPLESS_MAIN(TestImgLib)

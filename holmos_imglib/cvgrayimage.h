@@ -3,6 +3,9 @@
 
 #include "holmos_imglib_global.h"
 #include <opencv2/opencv.hpp>
+#include <QImage>
+#include <QRgb>
+#include <string>
 
 #ifdef DOUBLE_PRECISION
     typedef double floatp;
@@ -38,6 +41,19 @@ public:
      * @brief initialize the image with a given value
      */
     void initValue(floatp val);
+
+    /**
+     * @brief normalize the image to a minimum of 0.0 and a max of 1.0
+     */
+    void normalize();
+
+    /**
+     * @brief Generate a CvGrayImage from a QImage.
+     * @param img a grayscale image. if it is not grayscale the first channel will be extracted
+     */
+    static CvGrayImage fromQImage(QImage &img);
+
+    floatp *getFloatpArr();
 
     cv::Mat *getMat();
 

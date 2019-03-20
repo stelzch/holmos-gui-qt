@@ -31,6 +31,25 @@ void CvGrayImage::initValue(floatp val) {
     });
 }
 
+CvGrayImage CvGrayImage::fromQImage(QImage &img) {
+    CvGrayImage retVal(img.height(), img.width());
+    retVal.forEach([img] (int y, int x) {
+        QRgb colorValue = img.pixel(x, y);
+
+        return qRed(colorValue);
+    });
+
+    return retVal;
+}
+
+void CvGrayImage::normalize() {
+    cv::normalize(*mat, *mat, 0.0, 1.0, cv::NormTypes::NORM_MINMAX);
+}
+
+floatp *CvGrayImage::getFloatpArr() {
+    return mat->ptr<floatp>(0);
+}
+
 
 CvGrayImage::~CvGrayImage() {
     delete mat;
