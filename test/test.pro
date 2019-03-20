@@ -1,5 +1,4 @@
 QT += testlib
-QT -= gui
 
 CONFIG += qt console warn_on depend_includepath testcase
 CONFIG -= app_bundle
@@ -18,7 +17,7 @@ DEPENDPATH += $$PWD/../holmos_imglib
 
 unix:!macx: PRE_TARGETDEPS += $$OUT_PWD/../holmos_imglib/libholmos_imglib.a
 
-LIBS += `pkg-config --with-path /usr/local/lib64/pkgconfig --static --libs opencv`
+LIBS += `pkg-config --static --libs opencv`
 CONFIG += c++14
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp
