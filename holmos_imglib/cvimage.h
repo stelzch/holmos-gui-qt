@@ -1,4 +1,4 @@
-#ifndef CVGRAYIMAGE_H
+﻿#ifndef CVGRAYIMAGE_H
 #define CVGRAYIMAGE_H
 
 #include "holmos_imglib_global.h"
@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QRgb>
 #include <string>
+
 
 #ifdef DOUBLE_PRECISION
     typedef double floatp;
@@ -15,8 +16,8 @@
     static const int HOLMOS_IMGLIB_GRAY_MAT_TYPE = CV_32FC1;
 #endif
 
-template<typename T>
-class HOLMOS_IMGLIBSHARED_EXPORT CvImage
+
+class CvGrayImage
 {
 
 public:
@@ -25,12 +26,12 @@ public:
      * @param height the height in pixels
      * @param width the width in pixels
      */
-    CvImage(int height, int width);
+    CvGrayImage(int height_, int width_);
 
     /**
      * @return the value at the given coordinates
      */
-    T getAt(int y, int x);
+    floatp getAt(int y, int x);
 
     /**
      * @brief Run the lambda on each pixel and set its value accordingly
@@ -41,7 +42,7 @@ public:
     /**
      * @brief initialize the image with a given value
      */
-    void initValue(T val);
+    void initValue(floatp val);
 
     /**
      * @brief normalize the image to a minimum of 0.0 and a max of 1.0
@@ -52,18 +53,19 @@ public:
      * @brief Generate a CvGrayImage from a QImage.
      * @param img a grayscale image. if it is not grayscale the first channel will be extracted
      */
-    static CvImage fromQImage(QImage &img);
+    static CvGrayImage fromQImage(QImage &img);
 
-    T *getArr();
+    int width() const;
+    int height() const;
+
+    floatp *getArr();
 
     cv::Mat *getMat();
 
-    virtual ~CvImage();
+    virtual ~CvGrayImage();
 protected:
-    int width, height;
+    int width_, height_;
     cv::Mat *mat;
 };
-
-typedef CvImage<floatp> CvGrayImage;
 
 #endif // CVGRAYIMAGE_H

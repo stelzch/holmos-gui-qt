@@ -10,7 +10,7 @@ SOURCES +=  tst_testimglib.cpp
 
 TARGET = test_imglib
 
-LIBS += `pkg-config --static --libs opencv`
+LIBS += `pkg-config --static --libs opencv fftw3 fftw3f`
 CONFIG += c++14
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp

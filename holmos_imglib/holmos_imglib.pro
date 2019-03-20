@@ -21,13 +21,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += staticlib
 HEADERS += holmos_imglib_global.h \
-    fftmanager.h \
-    cvimage.h
+    cvimage.h \
+    cvcompleximage.h
 SOURCES += \
-    fftmanager.cpp \
-    cvimage.cpp
+    cvimage.cpp \
+    cvcompleximage.cpp
 
-LIBS += `pkg-config --with-path /usr/local/lib64/pkgconfig --static --libs opencv`
+LIBS += `pkg-config --static --libs opencv fftw3 fftw3f`
 CONFIG += c++14
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp

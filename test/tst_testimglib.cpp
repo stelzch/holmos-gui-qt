@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <cvimage.h>
 #include <cvimage.cpp>
+#include <cvcompleximage.h>
 
 // add necessary includes here
 
@@ -24,6 +25,8 @@ private slots:
     void testNormalization();
     void testFloatArr();
     void testQImageImport();
+    void testComplexImage();
+    void testComplexDft();
 
 private:
     bool floatpEqual(floatp expected, floatp actual);
@@ -159,6 +162,47 @@ void TestImgLib::testQImageImport() {
     CvGrayImage img = CvGrayImage::fromQImage(qimg);
 
     QVERIFY(floatpEqual(img.getAt(500, 200), qRed(qimg.pixel(200, 500))));
+}
+
+void TestImgLib::testComplexImage() {
+    CvComplexImage cimg(1024, 1024);
+
+    cimg.initValue(ComplexPixel(1.0, 0.0));
+
+    ComplexPixel val = cimg.getAt(1000, 1);
+    QVERIFY(floatpEqual(val.real(), 1.0));
+    QVERIFY(floatpEqual(val.imag(), 0.0));
+}
+
+void TestImgLib::testComplexDft() {
+    QImage img1(":/holmos_raw.png");
+    QImage img2(":/holmos_raw_magspec.png");
+    CvGrayImage expectedInput = CvGrayImage::fromQImage(img1);
+    CvGrayImage expectedMagspec = CvGrayImage::fromQImage(img2);
+
+    CvComplexImage cimg(1024, 1024);
+    cimg.forEach([&expectedInput] (int y, int x) {
+        ComplexPixel p;
+        p.real(expectedInput.getAt(y, x));
+        p.imag(0.0);
+
+        return p;
+    });
+
+    CvGrayImage actualMagspec(1024, 1024);
+    cimg.fft().magnitudeSpectrum(actualMagspec);
+
+    actualMagspec.normalize();
+    expectedMagspec.normalize();
+
+    for (int x = 0; x < 1024; x++) {
+        for (int y = 0; y < 1024; y++) {
+            floatp actual = actualMagspec.getAt(y, x);
+            floatp expected = actualMagspec.getAt(y, x);
+
+            QVERIFY(floatpEqual(expected, actual));
+        }
+    }
 }
 
 QTEST_APPLESS_MAIN(TestImgLib)

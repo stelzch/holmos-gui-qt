@@ -1,41 +1,37 @@
-#include "cvgrayimage.h"
+#include "cvimage.h"
+#include <QDebug>
 
 
-template<typename T>
-CvImage<T>::CvImage(int height, int width) {
-    this->width = width;
-    this->height = height;
+CvGrayImage::CvGrayImage(int height, int width) {
+    this->width_ = width;
+    this->height_ = height;
 
     mat = new cv::Mat(height, width, HOLMOS_IMGLIB_GRAY_MAT_TYPE);
 }
 
-template<typename T>
-T CvImage<T>::getAt(int y, int x) {
-    return mat->at<T>(y, x);
+floatp CvGrayImage::getAt(int y, int x) {
+    return mat->at<floatp>(y, x);
 }
 
-template<typename T>
-cv::Mat *CvImage<T>::getMat() {
+cv::Mat *CvGrayImage::getMat() {
     return mat;
 }
 
-template<typename T>
-void CvImage<T>::forEach(std::function<floatp (int, int)> functor) {
+void CvGrayImage::forEach(std::function<floatp (int, int)> functor) {
     /* Capture the functor and execute it within the lambda expression */
-    mat->forEach<T>([functor](T &pixel, const int *position) {
+    mat->forEach<floatp>([functor](floatp &pixel, const int *position) {
         pixel = functor(position[0], position[1]);
     });
 }
 
-template<typename T>
-void CvImage<T>::initValue(T val) {
+void CvGrayImage::initValue(floatp val) {
     mat->forEach<floatp>([val] (floatp &pixel, const int *pos) {
-        Q_UNUSED(pos) pixel = val;
+        Q_UNUSED(pos)
+        pixel = val;
     });
 }
 
-template<typename T>
-CvImage<T> CvImage<T>::fromQImage(QImage &img) {
+CvGrayImage CvGrayImage::fromQImage(QImage &img) {
     CvGrayImage retVal(img.height(), img.width());
     retVal.forEach([img] (int y, int x) {
         QRgb colorValue = img.pixel(x, y);
@@ -46,18 +42,22 @@ CvImage<T> CvImage<T>::fromQImage(QImage &img) {
     return retVal;
 }
 
-template<typename T>
-void CvImage<T>::normalize() {
+void CvGrayImage::normalize() {
     cv::normalize(*mat, *mat, 0.0, 1.0, cv::NormTypes::NORM_MINMAX);
 }
 
-template<typename T>
-T *CvImage<T>::getArr() {
-    return mat->ptr<T>(0);
+floatp *CvGrayImage::getArr() {
+    return mat->ptr<floatp>(0);
 }
 
+int CvGrayImage::width() const {
+    return width_;
+}
 
-template<typename T>
-CvImage<T>::~CvImage() {
+int CvGrayImage::height() const {
+    return height_;
+}
+
+CvGrayImage::~CvGrayImage() {
     delete mat;
 }

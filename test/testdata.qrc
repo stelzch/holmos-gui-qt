@@ -1,5 +1,6 @@
 <RCC>
-    <qresource>
+    <qresource prefix="/">
         <file alias="holmos_raw.png">testdata/holmos_raw.png</file>
+        <file alias="holmos_raw_magspec.png">testdata/holmos_raw_magspec.png</file>
     </qresource>
 </RCC>
