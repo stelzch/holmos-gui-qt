@@ -15,7 +15,8 @@
     static const int HOLMOS_IMGLIB_GRAY_MAT_TYPE = CV_32FC1;
 #endif
 
-class HOLMOS_IMGLIBSHARED_EXPORT CvGrayImage
+template<typename T>
+class HOLMOS_IMGLIBSHARED_EXPORT CvImage
 {
 
 public:
@@ -24,12 +25,12 @@ public:
      * @param height the height in pixels
      * @param width the width in pixels
      */
-    CvGrayImage(int height, int width);
+    CvImage(int height, int width);
 
     /**
      * @return the value at the given coordinates
      */
-    floatp getAt(int y, int x);
+    T getAt(int y, int x);
 
     /**
      * @brief Run the lambda on each pixel and set its value accordingly
@@ -40,7 +41,7 @@ public:
     /**
      * @brief initialize the image with a given value
      */
-    void initValue(floatp val);
+    void initValue(T val);
 
     /**
      * @brief normalize the image to a minimum of 0.0 and a max of 1.0
@@ -51,16 +52,18 @@ public:
      * @brief Generate a CvGrayImage from a QImage.
      * @param img a grayscale image. if it is not grayscale the first channel will be extracted
      */
-    static CvGrayImage fromQImage(QImage &img);
+    static CvImage fromQImage(QImage &img);
 
-    floatp *getFloatpArr();
+    T *getArr();
 
     cv::Mat *getMat();
 
-    virtual ~CvGrayImage();
+    virtual ~CvImage();
 protected:
     int width, height;
     cv::Mat *mat;
 };
+
+typedef CvImage<floatp> CvGrayImage;
 
 #endif // CVGRAYIMAGE_H

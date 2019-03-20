@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QDebug>
-#include <cvgrayimage.h>
+#include <cvimage.h>
+#include <cvimage.cpp>
 
 // add necessary includes here
 
@@ -123,7 +124,7 @@ void TestImgLib::testNormalization() {
     img.forEach([] (int y, int x) {
         return (y % 2 == 0) ? 24.0 : -24.0;
     });
-    img.getFloatpArr()[0] = 0.0;
+    img.getArr()[0] = 0.0;
     img.normalize();
 
     QVERIFY(floatpEqual(img.getAt(200, 0), 1.0));
@@ -140,7 +141,7 @@ void TestImgLib::testFloatArr() {
         return y / (x+2.0);
     });
 
-    floatp *arr = img.getFloatpArr();
+    floatp *arr = img.getArr();
     for (int y = 0; y < n0; y++) {
         for (int x = 0; x < n1; x++) {
             floatp arrVal = arr[y * n0 + x];
@@ -154,7 +155,7 @@ void TestImgLib::testFloatArr() {
 void TestImgLib::testQImageImport() {
     Q_INIT_RESOURCE(testdata);
 
-    QImage qimg("testdata/holmos_raw.png");
+    QImage qimg(":/holmos_raw.png");
     CvGrayImage img = CvGrayImage::fromQImage(qimg);
 
     QVERIFY(floatpEqual(img.getAt(500, 200), qRed(qimg.pixel(200, 500))));
